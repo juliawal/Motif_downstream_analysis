@@ -3,7 +3,7 @@
 
 Reads the finished F4 summaries. Counts have already been calculated during
 analysis; the original Union pair tables are not read again here.
-Default tables: analysis_results/paper_data/.
+Default tables: analysis_results/.
 No figures are generated.
 Paths are resolved relative to this script, not the working directory.
 """
@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--association-dir', type=Path, default=ROOT / 'analysis_results/associations')
-    parser.add_argument('--output-dir', type=Path, default=ROOT / 'analysis_results/paper_data')
+    parser.add_argument('--output-dir', type=Path, default=ROOT / 'analysis_results')
     args = parser.parse_args()
     F4, OUT = args.association_dir.resolve(), args.output_dir.resolve()
     OUT.mkdir(parents=True, exist_ok=True)

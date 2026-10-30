@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "figures/main"
 DATA = figure_data_dir(OUT)
 DATA.mkdir(parents=True, exist_ok=True)
-BASE = ROOT / "analysis_results/paper_data"
+BASE = ROOT / "analysis_results"
 SOURCES = ["selected_gene_cohort_memberships.tsv",
            "selection_overlap.tsv", "selection_recurrence.tsv",
            "stability_selected_by_cohort.tsv"]

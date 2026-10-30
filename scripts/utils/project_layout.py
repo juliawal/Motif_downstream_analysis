@@ -11,7 +11,7 @@ def figure_data_dir(output):
     except ValueError:
         target = output / 'data'
     else:
-        target = ROOT / 'analysis_results/paper_data'
+        target = ROOT / 'analysis_results'
     target.mkdir(parents=True, exist_ok=True)
     return target
 

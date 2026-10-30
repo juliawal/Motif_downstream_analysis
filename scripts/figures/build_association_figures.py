@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 PROJECT = Path(__file__).resolve().parents[2]
-WORK = PROJECT / "analysis_results/paper_data"
+WORK = PROJECT / "analysis_results"
 ARMS = ["rank_1", "rank_2", "rank_3", "union"]
 LABELS = ["S1", "S2", "S3", "Union"]
 BLUE, TEAL, ORANGE, INK, GRAY, LIGHT = "#0072B2", "#009E73", "#D55E00", "#202A33", "#6E7881", "#E7ECEF"

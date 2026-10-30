@@ -1,6 +1,6 @@
 # Figures and tables
 
-`run_downstream_analysis.py` saves results in `analysis_results/`, including 89 datasets in `analysis_results/paper_data/`. The table and figure scripts read these prepared datasets without requiring the original Motif run, `pipeline_results/` or other analysis folders.
+`run_downstream_analysis.py` writes the 89 datasets for the text, tables and figures directly to `analysis_results/`. Intermediate data stays in its analysis subfolders. The table and figure scripts read the 89 datasets without requiring the original Motif run, `pipeline_results/` or the intermediate data.
 
 Run from this repository:
 
@@ -13,7 +13,7 @@ These commands leave the datasets and `Masterarbeit/` unchanged. For the full wo
 
 ## Figures
 
-`build_figures.py` generates 17 PDFs. Output paths below are relative to this repository; modules are in `scripts/figures/` and data files are in `analysis_results/paper_data/`.
+`build_figures.py` generates 17 PDFs. Output paths below are relative to this repository; modules are in `scripts/figures/` and data files are in `analysis_results/`.
 
 | Output | Module | Data files |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ The literature figure also has PNG and SVG versions. Figure placement and captio
 
 ## Supplementary tables
 
-`build_tables.py` writes all 13 LaTeX table bodies to `tables/supplements/manuscript_rows.tex`. The current manuscript has no main-text tables; `tables/main/` is reserved for them. Data files below are in `analysis_results/paper_data/`.
+`build_tables.py` writes all 13 LaTeX table bodies to `tables/supplements/manuscript_rows.tex`. The current manuscript has no main-text tables; `tables/main/` is reserved for them. Data files below are in `analysis_results/`.
 
 | Table | Content | Data file |
 | --- | --- | --- |
@@ -57,4 +57,4 @@ The literature figure also has PNG and SVG versions. Figure placement and captio
 | S12 | Additional candidates: evidence and limitations | `candidate_shortlist.tsv` |
 | S13 | Aggregate pair evidence for the additional candidates | `candidate_shortlist.tsv` |
 
-S6 lists nine entries referring to eight datasets in `analysis_results/paper_data/`; entries D and G use the same file. Table captions, layouts and numbering remain in `Masterarbeit/main.tex`. The generated bodies do not automatically replace its inline tables.
+S6 lists nine entries referring to eight datasets in `analysis_results/`; entries D and G use the same file. Table captions, layouts and numbering remain in `Masterarbeit/main.tex`. The generated bodies do not automatically replace its inline tables.

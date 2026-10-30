@@ -6,8 +6,8 @@ From the project root, in the Motif environment, run:
 
 From another working directory, use the absolute path to this script.
 Default input and output paths are resolved relative to the script.
-Defaults read analysis_results/paper_data/ and write ucec_motif_binding.pdf
-to figures/main/, with plotted source rows in analysis_results/paper_data/.
+Defaults read analysis_results/ and write ucec_motif_binding.pdf
+to figures/main/, with plotted source rows in analysis_results/.
 Use --evidence-dir and --output-dir to select other locations. No models,
 hypothesis tests or multiple-testing corrections are recomputed.
 Panels A and B are stacked at 156 x 163 mm for a portrait manuscript page.
@@ -144,10 +144,10 @@ def draw_portrait(union, lookup, settings_order, groups):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--evidence-dir', type=Path, default=ROOT / 'analysis_results/paper_data',
+    parser.add_argument('--evidence-dir', type=Path, default=ROOT / 'analysis_results',
                         help='Directory containing the saved binding measurements and original group tests')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'figures/main',
-                        help='Directory for PDF; source tables use analysis_results/paper_data/ for project outputs, otherwise data/')
+                        help='Directory for PDF; source tables use analysis_results/ for project outputs, otherwise data/')
     args = parser.parse_args()
     OUT = args.output_dir.resolve()
     DATA = figure_data_dir(OUT)

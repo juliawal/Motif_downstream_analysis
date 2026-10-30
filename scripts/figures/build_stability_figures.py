@@ -131,7 +131,7 @@ def setting_overlap(evidence):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--data-dir", type=Path, default=ROOT / "analysis_results/paper_data")
+    parser.add_argument("--data-dir", type=Path, default=ROOT / "analysis_results")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "figures/supplement")
     args = parser.parse_args()
     source = args.data_dir.resolve()

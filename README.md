@@ -37,21 +37,20 @@ Completed Motif run
 pipeline_results/ — prepared inputs
     │ run_downstream_analysis.py
     ▼
-analysis_results/ — results and intermediate data
-    └── paper_data/ — 89 datasets for the text, tables and figures
-            │
-            ├── build_tables.py
-            │   → tables/supplements/ — 13 supplementary tables
-            │
-            └── build_figures.py
-                → figures/main/ and figures/supplement/ — 17 figures
+analysis_results/ — 89 datasets, with intermediate data in subfolders
+    │
+    ├── build_tables.py
+    │   → tables/supplements/ — 13 supplementary tables
+    │
+    └── build_figures.py
+        → figures/main/ and figures/supplement/ — 17 figures
 ```
 
 The analysis produces data; table and figure generation are separate steps. All current tables (S1–S13) are supplementary. Their LaTeX bodies are saved together in `tables/supplements/manuscript_rows.tex`. `tables/main/` is reserved for main-text tables and is currently empty.
 
 ## Rebuild tables and figures
 
-With `analysis_results/paper_data/` already available:
+Once the 89 datasets are available in `analysis_results/`:
 
 ```bash
 python scripts/build_tables.py

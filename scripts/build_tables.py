@@ -1,4 +1,4 @@
-"""Render the 13 supplementary table bodies from analysis_results/paper_data/.
+"""Render the 13 supplementary table bodies from analysis_results/.
 
 Captions, column layouts and explanations belong to the manuscript. Numbers,
 selection order and the curated candidate descriptions come from the analysis and table builders.
@@ -65,7 +65,7 @@ def escape(value):
 
 def render(root):
     root = Path(root)
-    data = root / 'analysis_results/paper_data'
+    data = root / 'analysis_results'
     def read(path):
         with path.open() as handle:
             return list(csv.DictReader(handle, delimiter='\t'))

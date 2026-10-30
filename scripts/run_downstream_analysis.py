@@ -76,7 +76,7 @@ def main():
         subprocess.run([sys.executable, "-B", str(ROOT / "scripts/analysis" / script)],
                        cwd=ROOT, check=True)
 
-    output = ROOT / "analysis_results/paper_data"
+    output = ROOT / "analysis_results"
     output.mkdir(parents=True, exist_ok=True)
     for folder, names in ANALYSIS_TABLES.items():
         for name in names:
@@ -87,7 +87,7 @@ def main():
         print(f"\ntables {number}/{len(DATA_MODULES)}: {module}", flush=True)
         subprocess.run([sys.executable, "-B", str(ROOT / "scripts" / module)],
                        cwd=ROOT, env=env, check=True)
-    print("\nFinished: analysis_results/; prepared manuscript data: analysis_results/paper_data/", flush=True)
+    print("\nFinished: analysis_results/", flush=True)
 
 
 if __name__ == "__main__":

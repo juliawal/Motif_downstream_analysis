@@ -17,7 +17,7 @@ from figure_typography import readable_text
 
 ROOT = Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--source", type=Path, default=ROOT / "analysis_results/paper_data/binding_case_summary.tsv")
+parser.add_argument("--source", type=Path, default=ROOT / "analysis_results/binding_case_summary.tsv")
 parser.add_argument("--output-dir", type=Path, default=ROOT / "figures/main")
 args = parser.parse_args()
 SOURCE = args.source.resolve()

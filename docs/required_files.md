@@ -43,4 +43,4 @@ Keep the files named by these keys in `config.yaml`. Relative paths are resolved
 | `hippie_network_file` | Interaction network |
 | `chipseq_dir` | `peak_files.json` and its referenced peak files; older runs may use `manifest.json` |
 
-The preparation step requires `pipeline_results/` to be absent. Once prepared, `run_downstream_analysis.py` uses this folder. Rebuilding tables and figures needs only `analysis_results/paper_data/`; see [figures and tables](figures_and_tables.md).
+The preparation step requires `pipeline_results/` to be absent. Once prepared, `run_downstream_analysis.py` uses this folder. Rebuilding tables and figures needs only `analysis_results/`; see [figures and tables](figures_and_tables.md).

@@ -5,7 +5,7 @@ From the project root:
     python scripts/tables/build_union_enrichment_terms.py
 
 Reads analysis_results/binding_network_enrichment/enriched_terms.tsv.
-Writes the full term records and category mapping in analysis_results/paper_data/.
+Writes the full term records and category mapping in analysis_results/.
 The files supply current Table S3 (tab:f3-supported-terms). The manuscript
 rows are rendered by scripts/build_tables.py.
 
@@ -27,7 +27,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--evidence-dir', type=Path, default=ROOT / 'analysis_results/binding_network_enrichment',
                         help='Directory containing enriched_terms.tsv')
-    parser.add_argument('--output-dir', type=Path, default=ROOT / 'analysis_results/paper_data',
+    parser.add_argument('--output-dir', type=Path, default=ROOT / 'analysis_results',
                         help='Directory for union_enrichment_terms.tsv and enrichment_term_categories.tsv')
     args = parser.parse_args()
     source = args.evidence_dir.resolve() / 'enriched_terms.tsv'

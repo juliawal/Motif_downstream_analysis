@@ -18,7 +18,7 @@ BLUE, GRAY, INK, EDGE = '#0072B2', '#D4DADF', '#243746', '#8C99A3'
 
 
 def main():
-    counts = pd.read_csv(ROOT / 'analysis_results/paper_data/literature_comparison.tsv',
+    counts = pd.read_csv(ROOT / 'analysis_results/literature_comparison.tsv',
                          sep='\t', keep_default_na=False)
     out = ROOT / 'figures/main'
     out.mkdir(parents=True, exist_ok=True)

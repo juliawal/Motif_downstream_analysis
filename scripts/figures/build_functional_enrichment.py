@@ -4,10 +4,10 @@
 Run in the Motif environment:
     python scripts/figures/build_functional_enrichment.py
 
-Reads analysis_results/paper_data/enriched_terms.tsv and
+Reads analysis_results/enriched_terms.tsv and
 writes functional_enrichment.pdf to figures/main/. The complete
 110 term rows, category mapping, cohort ranking, category summaries, gene
-memberships are written to analysis_results/paper_data/.
+memberships are written to analysis_results/.
 
 Use --evidence-dir and --output-dir for alternative locations. This standalone
 generator needs no files from On_the_go and does not alter the manuscript or
@@ -118,10 +118,10 @@ def figure(terms, rank, summary, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--evidence-dir', type=Path, default=ROOT / 'analysis_results/paper_data',
+    parser.add_argument('--evidence-dir', type=Path, default=ROOT / 'analysis_results',
                         help='Directory containing enriched_terms.tsv')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'figures/main',
-                        help='Directory for PDF; accompanying tables use analysis_results/paper_data/ for project outputs, otherwise data/')
+                        help='Directory for PDF; accompanying tables use analysis_results/ for project outputs, otherwise data/')
     args = parser.parse_args()
     source = args.evidence_dir.resolve() / 'enriched_terms.tsv'
     terms, rank, summary, mapping, excluded = prepare(source)
@@ -136,7 +136,7 @@ def main():
     ]
     # Separate figure runs retain their own complete source tables. The normal
     # paper run shares the identical term tables with the supplement exporter.
-    if source != ROOT / 'analysis_results/paper_data/enriched_terms.tsv' or output_dir != ROOT / 'figures/main':
+    if source != ROOT / 'analysis_results/enriched_terms.tsv' or output_dir != ROOT / 'figures/main':
         exports += [('union_enrichment_terms', terms), ('enrichment_term_categories', mapping)]
     for name, frame in exports:
         artifacts.write_dataframe(frame, data_dir / f'{name}.tsv', sep='\t', index=False)

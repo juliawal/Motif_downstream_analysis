@@ -125,7 +125,7 @@ def draw_figure(data):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", type=Path,
-                        default=ROOT / "analysis_results/paper_data",
+                        default=ROOT / "analysis_results",
                         help="Directory containing the prepared candidate tables")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "figures/main",
                         help="Figure output directory")
