@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analyse the pipeline results and prepare the 89 manuscript datasets in analysis_results/."""
+"""Analyse the pipeline results and prepare the paper datasets in analysis_results/."""
 import argparse
 import os
 from pathlib import Path

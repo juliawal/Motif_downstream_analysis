@@ -1,6 +1,6 @@
 # Figures and tables
 
-`run_downstream_analysis.py` writes the 89 datasets for the text, tables and figures directly to `analysis_results/`. Intermediate data stays in its analysis subfolders. The table and figure scripts read the 89 datasets without requiring the original Motif run, `pipeline_results/` or the intermediate data.
+`run_downstream_analysis.py` writes prepared datasets directly to `analysis_results/`. Intermediate data stays in its analysis subfolders. The manuscript package contains 88 datasets; S6 entry E is kept in the reproduction archive. Table and figure rendering needs neither that archived file nor the original Motif run, `pipeline_results/` or the intermediate data.
 
 Run from this repository:
 
@@ -57,4 +57,6 @@ The literature figure also has PNG and SVG versions. Figure placement and captio
 | S12 | Additional candidates: evidence and limitations | `candidate_shortlist.tsv` |
 | S13 | Aggregate pair evidence for the additional candidates | `candidate_shortlist.tsv` |
 
-S6 lists nine entries referring to eight datasets in `analysis_results/`; entries D and G use the same file. Table captions, layouts and numbering remain in `Masterarbeit/main.tex`. The generated bodies do not automatically replace its inline tables.
+S6 lists nine entries: seven distinct supplement files and one archive file; D and G share a file. In `overlap_index.tsv`, `location=supplement` means `file` is relative to `tables/supplement/`. For `location=reproduction_archive`, it is relative to `Reproduktionsarchiv_Masterarbeit/`: entry E points to `diagnostics/union_same_cpg_recurrence.tsv.gz`. The analysis retains its own copy in `analysis_results/`; copying files into the manuscript or archive is a separate step.
+
+Table captions, layouts and numbering remain in `Masterarbeit/main.tex`. The generated bodies do not automatically replace its inline tables.

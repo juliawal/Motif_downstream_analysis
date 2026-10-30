@@ -3,7 +3,7 @@
 Captions, column layouts and explanations belong to the manuscript. Numbers,
 selection order and the curated candidate descriptions come from the analysis and table builders.
 All current manuscript tables belong to the supplement; there are no main-text tables.
-Only the 89 prepared datasets are needed, not the other analysis intermediates.
+Only the prepared manuscript datasets are needed, not the archived file or other intermediates.
 """
 import csv
 import math

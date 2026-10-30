@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export manuscript-table data and the eight files indexed by Table S6.
+"""Export table data and index the seven supplement files plus one archive file.
 
 Reads saved analyses, preserving their values and full columns. The manuscript table rows are rendered separately by scripts/build_tables.py.
 """
@@ -60,7 +60,7 @@ def build(analysis, output):
                          (hnf_context, "hnf1b_genomic_context_sensitivity.tsv")]:
         save(df, filename)
 
-    # Package the complete existing overlaps as electronic supplementary tables.
+    # Retain analysis copies of the overlaps; S6 records their publication location.
     # Copy original bytes so leading-zero state patterns and compressed records
     # survive unchanged; this step performs no overlap analysis or new testing.
     overlap_specs = [
@@ -68,7 +68,7 @@ def build(analysis, output):
         ("B", "all_four_pair_patterns_by_context.tsv", "All four-analysis patterns by MF and cohort"),
         ("C", "all_four_pair_patterns_global.tsv", "All four-analysis patterns pooled across contexts"),
         ("D", "union_gene_recurrence.tsv", "Shared tested and supported pairs by MF"),
-        ("E", "union_same_cpg_recurrence.tsv.gz", "Exact pair recurrence across cohorts in the union"),
+        ("E", "union_same_cpg_recurrence.tsv.gz", "Exact pair recurrence across cohorts in the union (reproduction archive)"),
         ("F", "union_pairwise_cohort_recurrence.tsv", "Pairwise cohort overlaps and coefficient directions"),
         ("G", "union_gene_recurrence.tsv", "Union gene recurrence and exact-pair summaries"),
         ("H", "gene_recurrence.tsv", "Gene recurrence for each setting and the union"),
@@ -94,7 +94,9 @@ def build(analysis, output):
             copied[name] = (len(pd.read_csv(target, sep="\t", usecols=[0])),
                             hashlib.sha256(target.read_bytes()).hexdigest())
         rows, checksum = copied[name]
-        record = {"key": key, "file": name, "description": description,
+        record = {"key": key, "file": "diagnostics/" + name if key == "E" else name,
+                  "location": "reproduction_archive" if key == "E" else "supplement",
+                  "description": description,
                   "rows": rows, "sha256": checksum, "analysis_source": relative,
                   "columns": ";".join(robustness_columns) if key == "D" else "*"}
         overlap_records.append(record)
