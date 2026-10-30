@@ -11,7 +11,7 @@ def figure_data_dir(output):
     except ValueError:
         target = output / 'data'
     else:
-        target = ROOT / 'tables/supplement'
+        target = ROOT / 'analysis_results/paper_data'
     target.mkdir(parents=True, exist_ok=True)
     return target
 
@@ -24,7 +24,7 @@ def figure_output_dir(output, name):
     return output
 
 
-# run_downstream_analyses.py and build_figures.py select their own outputs. Shared calculations are
+# run_downstream_analysis.py and build_figures.py select their own outputs. Shared calculations are
 # identical in both modes. No pandas or matplotlib functions are monkeypatched.
 import os
 OUTPUT_KIND = os.environ.get("MOTIF_OUTPUT_KIND", "figures")

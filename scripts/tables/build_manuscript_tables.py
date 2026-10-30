@@ -106,6 +106,6 @@ if __name__ == "__main__":
     root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--analysis", type=Path, default=root / "analysis_results")
-    parser.add_argument("--output", type=Path, default=root / "tables/supplement")
+    parser.add_argument("--output", type=Path, default=root / "analysis_results/paper_data")
     args = parser.parse_args()
     build(args.analysis, args.output)

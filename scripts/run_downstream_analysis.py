@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Die Pipeline-Ergebnisse auswerten und die 89 Paper-Datentabellen aufbereiten."""
+"""Analyse the pipeline results and prepare the 89 manuscript datasets in analysis_results/."""
 import argparse
 import os
 from pathlib import Path
@@ -76,7 +76,7 @@ def main():
         subprocess.run([sys.executable, "-B", str(ROOT / "scripts/analysis" / script)],
                        cwd=ROOT, check=True)
 
-    output = ROOT / "tables/supplement"
+    output = ROOT / "analysis_results/paper_data"
     output.mkdir(parents=True, exist_ok=True)
     for folder, names in ANALYSIS_TABLES.items():
         for name in names:
@@ -87,7 +87,7 @@ def main():
         print(f"\ntables {number}/{len(DATA_MODULES)}: {module}", flush=True)
         subprocess.run([sys.executable, "-B", str(ROOT / "scripts" / module)],
                        cwd=ROOT, env=env, check=True)
-    print("\nFertig: analysis_results/ und tables/supplement/", flush=True)
+    print("\nFinished: analysis_results/; prepared manuscript data: analysis_results/paper_data/", flush=True)
 
 
 if __name__ == "__main__":

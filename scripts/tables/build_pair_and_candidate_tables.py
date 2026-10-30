@@ -9,7 +9,7 @@ import shutil
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATES = ROOT / 'analysis_results/additional_candidates'
 DIRECTIONS = ROOT / 'analysis_results/pair_directions'
-OUTPUT = ROOT / 'tables/supplement'
+OUTPUT = ROOT / 'analysis_results/paper_data'
 OUTPUT.mkdir(parents=True, exist_ok=True)
 
 # Export complete supporting tables and every plotted pair context.

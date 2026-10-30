@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Draw the pair-direction figure from saved analysis tables.
 
-Inputs: tables/supplement/.
+Inputs: analysis_results/paper_data/.
 Outputs: PDF in figures/main/ and plotted data in
-tables/supplement/. No models or significance tests are rerun.
+analysis_results/paper_data/. No models or significance tests are rerun.
 """
 import argparse
 from pathlib import Path
@@ -163,7 +163,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--input-dir", type=Path,
-        default=ROOT / "tables/supplement",
+        default=ROOT / "analysis_results/paper_data",
         help="Directory containing the prepared direction tables",
     )
     parser.add_argument(

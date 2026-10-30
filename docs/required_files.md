@@ -1,28 +1,46 @@
 # Required files
 
-All paths below are relative to the completed sibling `Motif/` run. Configuration resource paths are resolved relative to that run, not the caller's working directory.
+`prepare_pipeline_results.py` reads the completed sibling `Motif/` run and writes `pipeline_results/`. Keep the original Motif code, environment, configuration and references available. The export uses Motif's binding and network helpers.
 
-For entries such as `genome_fasta`, look up the file path in `Motif/config.yaml`. For example, `genome_fasta: "resources/hg38.fa"` means that the required file is `Motif/resources/hg38.fa`.
+The run must contain the three selected settings, their union and the manual evaluation for the paper's [34 cohorts and 17 genes](../scripts/paper_cohorts_and_genes.json). See the [README](../README.md) for running the workflow.
 
-| Input | Produced by current Motif | Used by Motif_downstream_analysis |
-| --- | --- | --- |
-| `config.yaml` | Run configuration | Cohorts, settings, seeds and reference paths |
-| `results/stability_comparison/{selection,ranking}.tsv` | Stage D | Selected settings and stability ranking |
-| `results/<cohort>/prepared/regulator_names.tsv` | Stage A | Tested gene universe and F2 background |
-| `results/<cohort>/prepared/target_names.tsv` | Stage A | Binding eligibility in PRAD, THCA and UCEC |
-| `results/<cohort>/stability/grid_stability.tsv` | Stage D | Stability figures and summaries |
-| `results/selected_settings/rank_<1–3>/<cohort>/selected_mfs/mfs.tsv` | Stage E | Candidate membership |
-| `.../evaluation_input/mf_cpg_pairs.tsv` | Stage F0 | Original pair sets, including untestable pairs |
-| `.../evaluation/binding_sites.tsv`, `binding_sites_per_mf.tsv` | Stage F1 | Original group tests and individual binding measurements |
-| `.../evaluation/binding_evidence/fimo_motifs.meme` | Stage F1 when motifs are assigned | Motif identity audit |
-| `.../evaluation/binding_evidence/fimo_hits_with_cpg_ids.tsv` | Stage F1 | CpG-specific motif matches for the UCEC case |
-| `.../evaluation/ppi_proximity.tsv` | Stage F2 | Original PPI group results |
-| `.../evaluation/gene_set_enrichment.tsv` | Stage F3 | Functional enrichment and membership |
-| `.../evaluation/mediation.tsv`, `mediation_triplets.tsv` | Stage F4 | Original summary, every tested/untestable triplet and support decision |
-| `results/union/<cohort>/...` with the same files | `motif union_evaluation` | Union analyses alongside S1–S3 |
-| `results/manual_mfs/selected_mfs/mfs.tsv` and `evaluation/{binding_sites,binding_sites_per_mf,ppi_proximity,gene_set_enrichment}.tsv` | `motif manually_evaluation --mfs ...` | Pooled 17-gene F1–F3 analysis; cohort F4 is taken from ordinary results |
-| `<chipseq_dir>/peak_files.json`, `<chipseq_dir>/peaks/*.bed` | `prepare_chipseq_resources` | Selected ChIP resource identity and interval overlaps |
-| `gene_annotation_file`, `gene_tss_annotations_file`, `coding_gene_list_file` | Gene references configured in `config.yaml` | Gene identities, TSS positions and coding-gene lists |
-| `cpg_coordinates_file`, `cpg_gene_annotations_file`, `cpg_annotations_file` | CpG references configured in `config.yaml` | CpG coordinates, binding eligibility and genomic context |
-| `genome_fasta`, `genome_fasta_index` | Reference genome and FASTA index configured in `config.yaml` | Sequence eligibility for binding annotations |
-| `hippie_network_file` | PPI network configured in `config.yaml` | PPI effects |
+## Saved results
+
+Paths below are relative to `Motif/`. `<cohort>` means each configured cohort.
+
+| Path | Contents |
+| --- | --- |
+| `config.yaml` | Run settings and reference paths |
+| `results/stability_comparison/selection.tsv`, `results/stability_comparison/ranking.tsv` | Selected settings and ranking |
+| `results/<cohort>/prepared/regulator_names.tsv` | Tested genes |
+| `results/<cohort>/stability/grid_stability.tsv` | Stability results |
+| `results/<cohort>/prepared/target_names.tsv` | Prepared CpGs; needed for PRAD, THCA and UCEC |
+
+Each `results/selected_settings/rank_<1–3>/<cohort>/` and `results/union/<cohort>/` directory must contain:
+
+| Path within each directory | Contents |
+| --- | --- |
+| `selected_mfs/mfs.tsv` | Selected candidates |
+| `evaluation_input/mf_cpg_pairs.tsv` | Candidate–CpG pairs |
+| `evaluation/binding_sites.tsv`, `evaluation/binding_sites_per_mf.tsv` | Binding results |
+| `evaluation/ppi_proximity.tsv` | Network results |
+| `evaluation/gene_set_enrichment.tsv` | Enrichment results |
+| `evaluation/mediation.tsv`, `evaluation/mediation_triplets.tsv` | Association summaries and full triplets |
+
+Keep `evaluation/binding_evidence/fimo_motifs.meme` where produced; it is copied when present. `fimo_hits_with_cpg_ids.tsv` in that directory is needed when the PRAD/ERG, THCA/RUNX1 or UCEC/HNF1B case uses FIMO.
+
+Under `results/manual_mfs/`, keep `selected_mfs/mfs.tsv` and, in `evaluation/`, these four files: `binding_sites.tsv`, `binding_sites_per_mf.tsv`, `ppi_proximity.tsv` and `gene_set_enrichment.tsv`.
+
+## Reference files
+
+Keep the files named by these keys in `config.yaml`. Relative paths are resolved from `Motif/`.
+
+| Configuration keys | Contents |
+| --- | --- |
+| `gene_annotation_file`, `gene_tss_annotations_file`, `coding_gene_list_file` | Gene annotations |
+| `cpg_coordinates_file`, `cpg_gene_annotations_file`, `cpg_annotations_file` | CpG annotations |
+| `genome_fasta`, `genome_fasta_index` | Reference genome and index |
+| `hippie_network_file` | Interaction network |
+| `chipseq_dir` | `peak_files.json` and its referenced peak files; older runs may use `manifest.json` |
+
+The preparation step requires `pipeline_results/` to be absent. Once prepared, `run_downstream_analysis.py` uses this folder. Rebuilding tables and figures needs only `analysis_results/paper_data/`; see [figures and tables](figures_and_tables.md).

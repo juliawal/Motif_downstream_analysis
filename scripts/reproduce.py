@@ -9,7 +9,7 @@ import sys
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
-STEPS = ['prepare_pipeline_results.py', 'run_downstream_analyses.py',
+STEPS = ['prepare_pipeline_results.py', 'run_downstream_analysis.py',
          'build_tables.py', 'build_figures.py']
 
 

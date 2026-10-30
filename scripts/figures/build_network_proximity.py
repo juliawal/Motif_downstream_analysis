@@ -4,9 +4,9 @@
 Run from the project root:
     python scripts/figures/build_network_proximity.py
 
-Defaults read tables/supplement/ and write
+Defaults read analysis_results/paper_data/ and write
 network_proximity.pdf to figures/. Plotted tables
-are written to tables/supplement/. Use --evidence-dir and --output-dir to override.
+are written to analysis_results/paper_data/. Use --evidence-dir and --output-dir to override.
 The original nominal p-values are retained. No models, network scores,
 hypothesis tests or multiple-testing corrections are recomputed.
 """
@@ -53,10 +53,10 @@ def title(fig,x,y,letter,text,fs=8,va='top'):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--evidence-dir',type=Path,default=ROOT/'tables/supplement',
+    parser.add_argument('--evidence-dir',type=Path,default=ROOT/'analysis_results/paper_data',
                         help='Directory with the three saved PPI evidence tables')
     parser.add_argument('--output-dir',type=Path,default=ROOT/'figures/main',
-                        help='Figure directory; plotted tables use tables/supplement/ for project outputs, otherwise data/')
+                        help='Figure directory; plotted tables use analysis_results/paper_data/ for project outputs, otherwise data/')
     args=parser.parse_args()
     SOURCE=args.evidence_dir.resolve();OUT=args.output_dir.resolve();DATA=figure_data_dir(OUT)
     DATA.mkdir(parents=True,exist_ok=True)

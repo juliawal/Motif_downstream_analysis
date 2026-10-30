@@ -94,7 +94,7 @@ def draw_figure(tp, cel, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--data-dir', type=Path, default=ROOT / 'tables/supplement')
+    parser.add_argument('--data-dir', type=Path, default=ROOT / 'analysis_results/paper_data')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'figures/main')
     args = parser.parse_args()
     output_dir = args.output_dir.resolve()

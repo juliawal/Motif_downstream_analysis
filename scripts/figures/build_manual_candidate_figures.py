@@ -1,4 +1,4 @@
-"""Render both manual-panel figures solely from tables/supplement/."""
+"""Render both manual-panel figures solely from analysis_results/paper_data/."""
 from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
@@ -19,11 +19,11 @@ from figure_typography import readable_text
 
 ROOT = Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--data-dir', type=Path, default=ROOT / 'tables/supplement')
+parser.add_argument('--data-dir', type=Path, default=ROOT / 'analysis_results/paper_data')
 args = parser.parse_args()
 SOURCE = args.data_dir.resolve()
 OUT = ROOT / 'figures/main'
-DATA = ROOT / 'tables/supplement'
+DATA = ROOT / 'analysis_results/paper_data'
 OUT.mkdir(parents=True, exist_ok=True)
 DATA.mkdir(parents=True, exist_ok=True)
 BLUE, ORANGE, PURPLE, GREY = '#0072B2', '#C66D00', '#79549D', '#78848D'
