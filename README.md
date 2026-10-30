@@ -1,4 +1,4 @@
-# Motif_downstream_analysis
+# Motif downstream analysis
 
 Generate the paper's results, tables and figures from a completed [Motif](https://github.com/juliawal/Motif) run.
 
