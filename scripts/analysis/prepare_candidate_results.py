@@ -43,7 +43,7 @@ curation = [
   'Primary/metastatic SKCM may not be independent; 12 recurrent pairs also link SARC to SKCM-MET.'),
  ('RIMBP2','Alternative','Strong pair recurrence','Starke Paarrekurrenz',
   '34 recurrent pairs; cg06403845 supported in four cohorts and every setting.',
-  'Binding identity invalid; no positive network or functional layer.'),
+  'No positive network or functional layer.'),
  ('KNDC1','Alternative','Strong pair recurrence','Starke Paarrekurrenz',
   '65 recurrent pairs; predominantly positive; network excess in BRCA and LIHC.',
   'No usable binding evidence or favourable functional layer; LIHC absent in S3.'),

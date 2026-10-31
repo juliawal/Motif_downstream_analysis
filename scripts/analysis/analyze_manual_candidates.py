@@ -66,7 +66,7 @@ def main():
     term_selection = term_selection.sort_values(['n_mf_symbols_in_term','adj_p_value'], ascending=[False,True])
     matrix=np.array([[g in r.mf_symbols_in_term.split(';') for _,r in terms.iterrows()] for g in genes],int)
 
-    f2cols=['MF','MF_ensembl','cohort','entrez_id','graph_degree','n_degree_bin_comparators','pagerank_score','pagerank_degree_bin_null_mean','pagerank_degree_bin_excess','pagerank_difference_sign','harmonic_score','harmonic_degree_bin_null_mean','harmonic_degree_bin_excess','harmonic_difference_sign']
+    f2cols=['MF','MF_ensembl','cohort','entrez_id','pagerank_score','pagerank_degree_bin_null_mean','pagerank_degree_bin_excess','pagerank_difference_sign','harmonic_score','harmonic_degree_bin_null_mean','harmonic_degree_bin_excess','harmonic_difference_sign']
     f4cols=['MF','MF_ensembl','cohort','n_samples','context_status','n_tested_pairs','n_supported_pairs','n_a_supported_negative','n_a_supported_positive','f4_support_percent','f4_negative_a_percent','f4_positive_a_percent','f4_not_supported_percent']
 
     tables = args.output

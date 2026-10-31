@@ -1,6 +1,6 @@
 # Figures and tables
 
-`run_downstream_analysis.py` writes prepared datasets directly to `analysis_results/`. Intermediate data stays in its analysis subfolders. The manuscript package contains 88 datasets; S6 entry E is kept in the reproduction archive. Table and figure rendering needs neither that archived file nor the original Motif run, `pipeline_results/` or the intermediate data.
+`run_downstream_analysis.py` writes prepared datasets directly to `analysis_results/`. Intermediate data stays in its analysis subfolders. The manuscript package contains 88 datasets; S5 entry E is kept in the reproduction archive. Table and figure rendering needs neither that archived file nor the original Motif run, `pipeline_results/` or the intermediate data.
 
 Run from this repository:
 
@@ -39,24 +39,23 @@ The literature figure also has PNG and SVG versions. Figure placement and captio
 
 ## Supplementary tables
 
-`build_tables.py` writes all 13 LaTeX table bodies to `tables/supplements/manuscript_rows.tex`. The current manuscript has no main-text tables; `tables/main/` is reserved for them. Data files below are in `analysis_results/`.
+`build_tables.py` writes all 12 LaTeX table bodies to `tables/supplements/manuscript_rows.tex`. The current manuscript has no main-text tables; `tables/main/` is reserved for them. Data files below are in `analysis_results/`.
 
 | Table | Content | Data file |
 | --- | --- | --- |
 | S1 | Union candidate selection and evaluation coverage | `union_evaluation_coverage.tsv` |
-| S2 | Binding identity exclusions and ChIP-alias sensitivity | `binding_identity_sensitivity.tsv` |
-| S3 | Supported union enrichment terms | `union_enrichment_terms.tsv` |
-| S4 | Association coverage across cohorts and settings | `association_coverage.tsv` |
-| S5 | Union contexts meeting all four evidence criteria | `combined_positive_contexts.tsv` |
-| S6 | Index of association overlap datasets | `overlap_index.tsv` |
-| S7 | ERG–CpG–TDRD1 triplets in PRAD | `erg_tdrd1_triplets.tsv` |
-| S8 | HNF1B binding and expression–methylation directions in UCEC | `hnf1b_binding_directions.tsv` |
-| S9 | Genomic-context sensitivity of the HNF1B direction contrast | `hnf1b_genomic_context_sensitivity.tsv` |
-| S10 | Association summaries for the four paper cases | `case_association_table.tsv` |
-| S11 | Separate evaluation criteria for the four paper cases | `case_criteria_table.tsv` |
-| S12 | Additional candidates: evidence and limitations | `candidate_shortlist.tsv` |
-| S13 | Aggregate pair evidence for the additional candidates | `candidate_shortlist.tsv` |
+| S2 | Supported union enrichment terms | `union_enrichment_terms.tsv` |
+| S3 | Association coverage across cohorts and settings | `association_coverage.tsv` |
+| S4 | Union contexts meeting all four evidence criteria | `combined_positive_contexts.tsv` |
+| S5 | Index of association overlap datasets | `overlap_index.tsv` |
+| S6 | ERG–CpG–TDRD1 triplets in PRAD | `erg_tdrd1_triplets.tsv` |
+| S7 | HNF1B binding and expression–methylation directions in UCEC | `hnf1b_binding_directions.tsv` |
+| S8 | Genomic-context sensitivity of the HNF1B direction contrast | `hnf1b_genomic_context_sensitivity.tsv` |
+| S9 | Association summaries for the four paper cases | `case_association_table.tsv` |
+| S10 | Separate evaluation criteria for the four paper cases | `case_criteria_table.tsv` |
+| S11 | Additional candidates: evidence and limitations | `candidate_shortlist.tsv` |
+| S12 | Aggregate pair evidence for the additional candidates | `candidate_shortlist.tsv` |
 
-S6 lists nine entries: seven distinct supplement files and one archive file; D and G share a file. In `overlap_index.tsv`, `location=supplement` means `file` is relative to `tables/supplement/`. For `location=reproduction_archive`, it is relative to `Reproduktionsarchiv_Masterarbeit/`: entry E points to `diagnostics/union_same_cpg_recurrence.tsv.gz`. The analysis retains its own copy in `analysis_results/`; copying files into the manuscript or archive is a separate step.
+S5 lists nine entries: seven distinct supplement files and one archive file; D and G share a file. In `overlap_index.tsv`, `location=supplement` means `file` is relative to `tables/supplement/`. For `location=reproduction_archive`, it is relative to `Reproduktionsarchiv_Masterarbeit/`: entry E points to `diagnostics/union_same_cpg_recurrence.tsv.gz`. The analysis retains its own copy in `analysis_results/`; copying files into the manuscript or archive is a separate step.
 
 Table captions, layouts and numbering remain in `Masterarbeit/main.tex`. The generated bodies do not automatically replace its inline tables.

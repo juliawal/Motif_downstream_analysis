@@ -43,13 +43,8 @@ def main():
                         on=['analysis', 'cohort'], how='left')
     gp = groups.pivot(index=['analysis', 'cohort'], columns='measure', values='p_value').add_prefix('p_value_').reset_index()
     cross = cross.merge(gp, on=['analysis', 'cohort'], how='left')
-    cross['f1_formal_available'] = cross.status.eq('tested')
-    cross['f1_available'] = cross.valid_measured.astype(bool)
+    cross['f1_available'] = cross.status.eq('tested')
     cross['f1_positive'] = cross.f1_available & cross.difference.gt(0)
-    cross['f1_confirmed_motif_mismatch'] = cross.confirmed_motif_identity_mismatch
-    cross['f1_unresolved_chip_identity'] = cross.status.eq('tested') & cross.track.eq('ChIP_seq') & ~cross.assignment_identity_valid
-    cross['f1_available_including_unresolved_chip'] = cross.f1_formal_available & ~cross.f1_confirmed_motif_mismatch
-    cross['f1_positive_including_unresolved_chip'] = cross.f1_available_including_unresolved_chip & cross.difference.gt(0)
     cross['f2_available'] = cross.mapping_status.eq('in_network') & cross.harmonic_degree_bin_excess.notna()
     cross['f2_positive'] = cross.f2_available & cross.harmonic_degree_bin_excess.gt(0)
     cross['f2_harmonic_excess_positive'] = cross.f2_positive
@@ -63,8 +58,6 @@ def main():
     cross['all_four_positive'] = cross.f1_positive & other_positive
     cross['descriptive_all_four_positive'] = cross.all_four_positive
     cross['all_four_positive_and_pagerank_excess'] = cross.all_four_positive & cross.f2_pagerank_excess_positive
-    cross['all_four_available_including_unresolved_chip'] = cross.f1_available_including_unresolved_chip & cross[['f2_available', 'f3_available', 'f4_testable']].all(axis=1)
-    cross['all_four_positive_including_unresolved_chip'] = cross.f1_positive_including_unresolved_chip & other_positive
     cross['f2_harmonic_group_nominal'] = cross.p_value_harmonic.le(.05)
 
     union = cross[cross.analysis.eq('union')].copy()
@@ -88,7 +81,6 @@ def main():
         data.to_csv(out / name, sep='\t', index=False, na_rep='NA')
     cases = cross[[pair in CASES for pair in zip(cross.MF, cross.cohort)]]
     cases.to_csv(out / 'case_evaluation_criteria.tsv', sep='\t', index=False, na_rep='NA')
-    cross[cross.f1_confirmed_motif_mismatch | cross.f1_unresolved_chip_identity].to_csv(out / 'binding_identity_contexts.tsv', sep='\t', index=False, na_rep='NA')
     print(f'Combined evidence: {len(cross)} contexts, {len(positive)} positive union contexts.')
 
 

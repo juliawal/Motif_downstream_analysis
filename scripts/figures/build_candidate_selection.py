@@ -17,6 +17,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Patch
+from matplotlib.textpath import TextPath
+from matplotlib.transforms import ScaledTranslation
 import numpy as np
 import pandas as pd
 from figure_typography import readable_text
@@ -108,13 +110,15 @@ a, n_ax, b = axs
 fig.suptitle("MF selection across settings and cohorts", fontsize=12, fontweight="bold")
 a.set_title("A  Agreement across settings", loc="left", pad=31)
 left = np.zeros(len(cohorts))
+centered_labels = []
 for col, color in zip(["in_all_three", "in_exactly_two", "in_exactly_one"], colors):
     values = summary[col].to_numpy()
-    a.barh(y, values, left=left, height=.76, color=color, edgecolor="white", linewidth=.35)
+    a.barh(y, values, left=left, height=.94, color=color, edgecolor="white", linewidth=.35)
     for i, (val, offset) in enumerate(zip(values, left)):
         if val >= 3:
-            a.text(offset + val / 2, i, str(val), ha="center", va="center", fontsize=7,
-                   color="white" if col == "in_all_three" else "#18313D")
+            centered_labels.append(a.text(
+                offset + val / 2, i, str(val), ha="center", va="center", fontsize=7,
+                color="white" if col == "in_all_three" else "#18313D"))
     left += values
 a.set_xlim(0, 56)
 a.set_xticks([0, 15, 30, 45])
@@ -135,7 +139,7 @@ for i, n in enumerate(summary.union_n):
 
 matrix = recurrence[[f"exactly_{k}_other_cohorts" for k in range(max_other + 1)]].to_numpy()
 im = b.imshow(matrix, cmap=teal, vmin=0, vmax=int(matrix.max()), aspect="auto", interpolation="nearest")
-b.set_title("B  Union-MF recurrence", loc="left", pad=31)
+b.set_title("B  Union-MF recurrence in other cohorts", loc="left", pad=31)
 b.text(.5, 1.033, "Number of other cohorts", ha="center", va="bottom", fontsize=7.5, transform=b.transAxes)
 b.set_xticks(range(max_other + 1), [str(i) for i in range(max_other + 1)])
 b.xaxis.tick_top()
@@ -148,15 +152,24 @@ b.spines[:].set_visible(False)
 for i in range(len(cohorts)):
     for k in range(max_other + 1):
         val = int(matrix[i, k])
-        b.text(k, i, str(val) if val else "·", ha="center", va="center", fontsize=7.2,
-               color="white" if val >= 29 else ("#203A36" if val else "#A4B4B0"))
-b.set_xlabel("Cell values: number of union MFs", labelpad=9)
+        centered_labels.append(b.text(
+            k, i, str(val) if val else "·", ha="center", va="center", fontsize=7.2,
+            color="white" if val >= 29 else ("#203A36" if val else "#A4B4B0")))
+b.set_xlabel("Number of union MFs (Cell values are the exact number)", loc="right")
 for ax in [a, b]:
     ax.set_ylim(len(cohorts) - .5, -.5)
 cb = fig.colorbar(im, ax=b, orientation="horizontal", fraction=.025, pad=.025)
-cb.set_label("Number of MFs (shared colour scale)")
 cb.outline.set_visible(False)
+fig.align_xlabels([a, b])
 readable_text(fig)
+# Centre visible glyphs at each segment/cell midpoint after setting final font sizes.
+# Font line boxes include unused descender space and otherwise lift the digits.
+for label in centered_labels:
+    bounds = TextPath((0, 0), label.get_text(), prop=label.get_fontproperties()).get_extents()
+    offset = ScaledTranslation(-(bounds.x0 + bounds.x1) / 144,
+                               -(bounds.y0 + bounds.y1) / 144, fig.dpi_scale_trans)
+    label.set(ha="left", va="baseline")
+    label.set_transform(label.get_transform() + offset)
 artifacts.save_figure(fig, OUT / "candidate_selection_and_recurrence.pdf")
 plt.close(fig)
 

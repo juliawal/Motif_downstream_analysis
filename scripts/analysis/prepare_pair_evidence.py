@@ -120,7 +120,7 @@ write(genes[~genes.manual17],CANDIDATES/'additional_candidate_evidence.tsv')
 # Case-level F1 annotation is exported only for HNF1B/UCEC, ERG/PRAD, RUNX1/THCA.
 binding = read(PIPELINE / 'cpg_binding_annotations/target_cpg_hits.tsv.gz')
 binding = binding[binding.analysis.eq('union')]
-binding = binding[['cohort']+K+['track','eligible','binding_hit','chrom','window_start','window_end']]
+binding = binding[['cohort']+K+['track','cpg_passed_filters','binding_hit']]
 pairs = pairs.merge(binding,on=['cohort']+K,how='left')
 pairs = pairs.merge(u[['MF_ensembl','cohort','n_samples','f1_available','f1_positive','f2_positive','f3_member_significant_min3_term','all_four_positive']],on=['MF_ensembl','cohort'])
 write(pairs,DIRECTIONS/'all_pair_cohort_evidence.tsv.gz')

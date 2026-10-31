@@ -22,6 +22,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Rectangle
+from matplotlib.font_manager import FontProperties
+from matplotlib.textpath import TextPath
 from figure_typography import readable_text
 from build_pipeline_overview import render_overview
 import numpy as np
@@ -97,6 +99,15 @@ def method_overview():
     render_overview(OUT / "pipeline_overview.pdf")
 
 
+def coverage_label(ax, x, y, label, **kwargs):
+    # Centre the visible glyphs, excluding unused font ascent/descent space.
+    font = FontProperties(family="DejaVu Sans", size=8)
+    bounds = TextPath((0, 0), label, prop=font).get_extents()
+    offset = (-(bounds.x0 + bounds.x1) / 2, -(bounds.y0 + bounds.y1) / 2)
+    return ax.annotate(label, (x, y), xytext=offset, textcoords="offset points",
+                       ha="left", va="baseline", fontproperties=font, **kwargs)
+
+
 def main_coverage(f4dir, integration):
     frame = read(f4dir / "association_coverage.tsv")
     cross = read(integration / "union_evidence_contexts.tsv").query("analysis == 'union'")
@@ -104,7 +115,8 @@ def main_coverage(f4dir, integration):
     tested = frame.pivot(index="cohort", columns="analysis", values="n_tested_pairs").reindex(index=cohorts, columns=ARMS)
     rates = frame.pivot(index="cohort", columns="analysis", values="pair_support_fraction").reindex(index=cohorts, columns=ARMS) * 100
     rates = rates.where(tested.gt(0))
-    fig = plt.figure(figsize=(156/25.4, 150/25.4), layout="constrained")
+    # Extra row height leaves padding around the 8 pt cell labels.
+    fig = plt.figure(figsize=(156/25.4, 175/25.4), layout="constrained")
     upper = fig.add_gridspec(1, 2, width_ratios=[.85, .15], wspace=.025)
     ax, text = fig.add_subplot(upper[0]), fig.add_subplot(upper[1])
     cmap = LinearSegmentedColormap.from_list("support", ["#F1F6FA", "#B8D9EC", BLUE]); cmap.set_bad("#ECECEC")
@@ -116,9 +128,9 @@ def main_coverage(f4dir, integration):
     for i, cohort in enumerate(cohorts):
         for j, arm in enumerate(ARMS):
             value = rates.loc[cohort, arm]
-            ax.text(j, i, f"{int(tested.loc[cohort, arm]):,}" if pd.notna(value) else "NT", fontsize=6.7, ha="center", va="center", color="white" if pd.notna(value) and value > 70 else INK)
+            coverage_label(ax, j, i, str(int(tested.loc[cohort, arm])) if pd.notna(value) else "NT", color="white" if pd.notna(value) and value > 70 else INK)
         value = rates.loc[cohort, "union"]
-        text.text(.5, i, f"{value:.2f}%" if pd.notna(value) else "NT", ha="center", va="center", fontsize=7)
+        coverage_label(text, .5, i, f"{value:.2f}%" if pd.notna(value) else "NT")
     ax.set_xticks(np.arange(-.5, 4), minor=True); ax.set_yticks(np.arange(-.5, len(cohorts)), minor=True)
     ax.grid(which="minor", color="white", lw=1); ax.tick_params(which="minor", length=0)
     for spine in ax.spines.values(): spine.set_visible(False)

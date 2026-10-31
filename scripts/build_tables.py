@@ -1,4 +1,4 @@
-"""Render the 13 supplementary table bodies from analysis_results/.
+"""Render the 12 supplementary table bodies from analysis_results/.
 
 Captions, column layouts and explanations belong to the manuscript. Numbers,
 selection order and the curated candidate descriptions come from the analysis and table builders.
@@ -12,7 +12,6 @@ from pathlib import Path
 
 TABLES = [
     ('tab:rerun-coverage', 'Coverage'),
-    ('tab:rerun-identity', 'Identity'),
     ('tab:f3-supported-terms', 'FthreeTerms'),
     ('tab:rerun-f4-coverage', 'FfourCoverage'),
     ('tab:rerun-cross-layer', 'CrossLayer'),
@@ -78,7 +77,7 @@ def render(root):
     bodies = {}
     bodies['Coverage'] = lines([
         [cohort(r['cohort']), integer(r['n_union_selected']), integer(r['n_in_all_three_settings']),
-         integer(r['n_formal_F1']), ratio(r,'n_usable_FIMO','n_usable_ChIP'), integer(r['n_PPI_mapped']),
+         ratio(r,'n_usable_FIMO','n_usable_ChIP'), integer(r['n_PPI_mapped']),
          integer(r['n_F4_samples']), yes(r['F4_testable'])]
         for r in source('union_evaluation_coverage')])
     bodies['FfourCoverage'] = lines([
@@ -94,11 +93,6 @@ def render(root):
          yes(all(r[k]=='True' for k in ['selected_all_three_settings','f1_positive_all_three_settings','f3_membership_all_three_settings','f4_support_all_three_settings'])),
          yes(r['all_four_positive_in_union_and_all_settings'])]
         for r in source('combined_positive_contexts')])
-    bodies['Identity'] = lines([
-        [r['MF'],cohort(r['cohort']),ARMS[r['analysis']]] + [yes(r[k]) for k in [
-          'f1_confirmed_motif_mismatch','f1_unresolved_chip_identity','f1_available',
-          'f1_available_including_unresolved_chip','all_four_available_including_unresolved_chip','all_four_positive_including_unresolved_chip']]
-        for r in source('binding_identity_sensitivity')])
     bodies['ErgTriplets'] = lines([
         [ARMS[r['analysis']],r['CpG'],integer(r['G_prime_distance_bp']),fixed(r['a_estimate'],3),pvalue(r['a_pvalue']),
          fixed(r['b_estimate'],3),pvalue(r['b_pvalue']),pvalue(r['joint_adj_p_value']),yes(r['mediation_supported']),yes(r['binding_hit'])]

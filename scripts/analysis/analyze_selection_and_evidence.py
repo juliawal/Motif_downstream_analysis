@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """Summarize selection, stability and F1–F3 from saved pipeline results.
 Original p/q-values are retained. Individual effects and contributions are descriptive.
-Resource identities use actual motif names, peak manifests and gene annotation.
 The output root contains separate selection/stability and F1–F3 result folders;
 the cross-stage Union coverage is saved alongside the joint F1–F4 evaluation.
 """
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
 import gzip
 import itertools
 import json
@@ -77,16 +75,6 @@ class Analysis:
         self.cohorts = sorted(self.config["cohorts"])
         self.annotation = self.read(next((self.source / "reference_annotations/gene_annotation_file").glob("*.tsv.gz")))
         self.symbols = self.annotation.set_index("ensembl_id").selected_gene_symbol.to_dict()
-        self.canonical = defaultdict(set)
-        self.aliases = defaultdict(set)
-        self.gene_names = {}
-        for row in self.annotation.fillna("").itertuples():
-            names = {row.selected_gene_symbol} | tokens(row.previous_gene_symbols, "|") | tokens(row.gene_symbol_aliases, "|")
-            self.canonical[row.selected_gene_symbol.upper()].add(row.ensembl_id)
-            self.gene_names[row.ensembl_id] = {x.upper() for x in names if x}
-            for name in names:
-                self.aliases[name.upper()].add(row.ensembl_id)
-        self.remap = json.loads(self.text("data_sources_and_export_records/remap/manifest.json"))
         self.regulators = {c: set(self.text(f"original_pipeline_outputs/{c}/prepared/regulator_names.tsv.gz").splitlines()) for c in self.cohorts}
         # The export retains every original F2 field in this combined table.
         self.ppi_effects = self.read("ppi_network_proximity/group_effects.tsv")
@@ -110,25 +98,6 @@ class Analysis:
 
     def base(self, arm, cohort):
         return Path("original_pipeline_outputs") / ("union" if arm == "union" else f"selected_settings/{arm}") / cohort
-
-    def identity(self, gene, resource_name):
-        # JASPAR heterodimer components are separate named identities. Exact
-        # canonical agreement wins; aliases naming another canonical gene are
-        # flagged as collisions, rather than accepted merely as search hits.
-        components = [s.upper() for s in resource_name.split("::")]
-        canonical = self.symbols[gene].upper()
-        if canonical in components:
-            return "canonical_match", True, joined({gene})
-        relevant = [name for name in components if name in self.gene_names[gene]]
-        canonical_ids = set().union(*(self.canonical[name] for name in components))
-        if relevant and canonical_ids and gene not in canonical_ids:
-            return "alias_collides_with_other_canonical_gene", False, joined(canonical_ids)
-        aliases = set().union(*(self.aliases[name] for name in components))
-        if relevant and aliases == {gene}:
-            return "unique_alias_match", True, gene
-        if relevant:
-            return "ambiguous_alias_identity", False, joined(aliases)
-        return "resource_name_not_an_annotated_gene_name", False, joined(canonical_ids or aliases)
 
     def stability(self):
         prefix = "original_pipeline_outputs/stability_comparison/"
@@ -178,40 +147,6 @@ class Analysis:
                 binding = self.read(f1path).merge(symbol_ids, on="MF")
                 binding["analysis"], binding["cohort"], binding["source"] = arm, cohort, str(f1path)
                 binding["difference"] = binding.n_target_hits / binding.n_target_cpgs - binding.n_background_hits / binding.n_background_cpgs
-                motif_names = {}
-                meme_path = base / "evaluation/binding_evidence/fimo_motifs.meme.gz"
-                if self.files.path(meme_path).is_file():
-                    for line in self.text(meme_path).splitlines():
-                        if line.startswith("MOTIF "):
-                            _, motif_id, motif_name, *_ = line.split()
-                            motif_names[motif_id] = motif_name
-                validity, statuses = [], []
-                for row in binding.itertuples():
-                    assignments = []
-                    if row.track == "FIMO":
-                        motifs = sorted(tokens(row.jaspar_ids, ","))
-                        for motif in motifs:
-                            state, valid, identities = self.identity(row.MF_ensembl, motif_names[motif])
-                            assignments.append((state, valid))
-                    elif row.track == "ChIP_seq":
-                        entry = self.remap["entries"][row.MF]
-                        if entry["status"] == "available":
-                            state, valid, identities = self.identity(row.MF_ensembl, entry["symbol"])
-                            assignments.append((state, valid))
-                        else:
-                            assignments.append(("no_chipseq_resource", False))
-                    validity.append(all(valid for _, valid in assignments))
-                    statuses.append(joined(state for state, _ in assignments))
-                binding["assignment_identity_valid"] = validity
-                binding["assignment_status"] = statuses
-                binding["confirmed_motif_identity_mismatch"] = binding.track.eq("FIMO") & binding.assignment_status.str.contains("alias_collides_with_other_canonical_gene")
-                binding["unresolved_chip_identity"] = binding.track.eq("ChIP_seq") & binding.status.eq("tested") & ~binding.assignment_identity_valid
-                binding["known_motif_alias_issue"] = binding.confirmed_motif_identity_mismatch
-                binding["valid_measured"] = binding.status.eq("tested") & binding.assignment_identity_valid
-                binding["f1_formal_available"] = binding.status.eq("tested")
-                binding["f1_usable_strict"] = binding.valid_measured
-                binding["f1_usable_excluding_confirmed_mismatch"] = binding.status.eq("tested") & ~binding.confirmed_motif_identity_mismatch
-                binding["f1_state"] = np.select([binding.status.ne("tested"), ~binding.assignment_identity_valid, binding.difference.gt(0), binding.difference.lt(0)], ["not_measured", "identity_excluded", "positive", "negative"], default="tie")
                 tested = binding[binding.status.eq("tested")]
                 f1_frames.append(binding)
                 group_path = base / "evaluation/binding_sites.tsv.gz"
@@ -242,7 +177,7 @@ class Analysis:
                 terms["descriptive_theme"] = terms.term_name.map(theme)
                 sig = terms[terms.adj_p_value.lt(.05)].copy()
                 f3_sig.append(sig)
-                f3_counts.append(dict(analysis=arm, cohort=cohort, n_tested_terms=len(terms), n_background_genes=len(bg_symbols), n_mf_symbols=len(selected_symbols), n_nominal_terms=int(terms.p_value.lt(.05).sum()), n_bh_terms=len(sig), n_bh_min3_terms=int(sig.n_mf_symbols_in_term.ge(3).sum()), min_p=terms.p_value.min(), min_q=terms.adj_p_value.min(), source=str(term_path)))
+                f3_counts.append(dict(analysis=arm, cohort=cohort, n_tested_terms=len(terms), n_background_genes=len(bg_symbols), n_mf_symbols=len(selected_symbols), n_nominal_terms=int(terms.p_value.lt(.05).sum()), n_bh_terms=len(sig), n_bh_min3_terms=int(sig.term_has_min_mf_overlap.sum()), min_p=terms.p_value.min(), min_q=terms.adj_p_value.min(), source=str(term_path)))
             overlap = dict(cohort=cohort, rank1=len(mfsets["rank_1"]), rank2=len(mfsets["rank_2"]), rank3=len(mfsets["rank_3"]), intersection_all3=len(set.intersection(*(mfsets[a] for a in ARMS[:3]))), union=len(mfsets["union"]), union_exact_original_union=True, union_added_to_rank1=len(mfsets["union"] - mfsets["rank_1"]), pairs_union=len(pairsets["union"]), pairs_union_exact_original_union=True)
             for a, b in itertools.combinations(ARMS[:3], 2):
                 overlap[f"{a}_{b}_jaccard"] = len(mfsets[a] & mfsets[b]) / len(mfsets[a] | mfsets[b])
@@ -272,15 +207,15 @@ class Analysis:
         for row in terms.itertuples():
             for symbol in sorted(tokens(row.mf_symbols_in_term)):
                 for gene in lookup[row.analysis, row.cohort, symbol]:
-                    term_members.append(dict(analysis=row.analysis, cohort=row.cohort, MF_ensembl=gene, MF=symbol, library=row.library_name, term=row.term_name, q_term=row.adj_p_value, n_term_overlap=row.n_mf_symbols_in_term, theme=row.descriptive_theme, source=row.source))
+                    term_members.append(dict(analysis=row.analysis, cohort=row.cohort, MF_ensembl=gene, MF=symbol, library=row.library_name, term=row.term_name, q_term=row.adj_p_value, term_has_min_mf_overlap=row.term_has_min_mf_overlap, theme=row.descriptive_theme, source=row.source))
         term_members = pd.DataFrame(term_members)
         term_settings = []
         for (cohort, library, term), tt in terms.groupby(["cohort", "library_name", "term_name"]):
             arms = set(tt.analysis)
-            min3_arms = set(tt[tt.n_mf_symbols_in_term.ge(3)].analysis)
+            min3_arms = set(tt[tt.term_has_min_mf_overlap].analysis)
             term_settings.append(dict(cohort=cohort, library_name=library, term_name=term, significant_arms=joined(arms), significant_min3_arms=joined(min3_arms), significant_all_four=set(ARMS) <= arms, significant_min3_all_four=set(ARMS) <= min3_arms, significant_in_union="union" in arms, significant_min3_in_union="union" in min3_arms))
         self.save(pd.DataFrame(term_settings), "enrichment_setting_agreement.tsv")
-        f3_gene_context = term_members[term_members.n_term_overlap.ge(3)].groupby(KEY + ["MF_ensembl", "MF"]).agg(n_significant_min3_terms=("term", "size"), f3_themes=("theme", joined)).reset_index()
+        f3_gene_context = term_members[term_members.term_has_min_mf_overlap].groupby(KEY + ["MF_ensembl", "MF"]).agg(n_significant_min3_terms=("term", "size"), f3_themes=("theme", joined)).reset_index()
         self.save(f3_gene_context, "enrichment_gene_contexts.tsv")
         effects = self.ppi_effects
         per_mf = self.read("ppi_network_proximity/per_mf.tsv")
@@ -300,7 +235,7 @@ class Analysis:
                 coverage = coverage.merge(gg[[name]].rename(columns={name: f"F1_{track}_{name}"}), on=KEY)
         for measure in ["harmonic", "pagerank"]:
             ee = effects[effects.measure.eq(measure)].set_index(KEY)
-            names = ["n_mfs_nominated", "n_mfs_in_network", "p_value", "observed_mean_score", "random_set_null_mean", "relative_excess_percent"]
+            names = ["n_mfs_nominated", "n_mfs_in_network", "p_value", "observed_mean_score"]
             coverage = coverage.merge(ee[names].rename(columns={n: f"F2_{measure}_{n}" for n in names}), on=KEY)
         coverage = coverage.merge(term_counts.rename(columns={"n_tested_terms": "F3_n_tested_terms", "n_bh_terms": "F3_n_q_lt_05", "n_bh_min3_terms": "F3_n_q_lt_05_min3_mfs"}), on=KEY)
         self.save(coverage, "evaluation_coverage_and_tests.tsv")
@@ -309,14 +244,14 @@ class Analysis:
             ff = binding[binding.analysis.eq("union") & binding.cohort.eq(c)]
             mm = per_mf[per_mf.analysis.eq("union") & per_mf.cohort.eq(c)]
             mediation = pd.Series(json.loads(self.text(f"f4_methylation_factor_cpg_pairs/union_{c}.json")))
-            st1.append(dict(cohort=c, n_union_selected=len(members[members.analysis.eq("union") & members.cohort.eq(c)]), n_in_all_three_settings=int(overlap.set_index("cohort").loc[c, "intersection_all3"]), n_formal_F1=int(ff.status.eq("tested").sum()), n_usable_FIMO=int((ff.valid_measured & ff.track.eq("FIMO")).sum()), n_usable_ChIP=int((ff.valid_measured & ff.track.eq("ChIP_seq")).sum()), n_F1_confirmed_motif_mismatches=int(ff.confirmed_motif_identity_mismatch.sum()), n_F1_unresolved_chip_identity=int(ff.unresolved_chip_identity.sum()), n_F1_available_excluding_confirmed_mismatch=int(ff.f1_usable_excluding_confirmed_mismatch.sum()), n_PPI_mapped=int(mm.mapping_status.eq("in_network").sum()), n_F4_samples=int(mediation.n_samples), F4_testable=bool(mediation.testable)))
+            st1.append(dict(cohort=c, n_union_selected=len(members[members.analysis.eq("union") & members.cohort.eq(c)]), n_in_all_three_settings=int(overlap.set_index("cohort").loc[c, "intersection_all3"]), n_formal_F1=int(ff.status.eq("tested").sum()), n_usable_FIMO=int((ff.status.eq("tested") & ff.track.eq("FIMO")).sum()), n_usable_ChIP=int((ff.status.eq("tested") & ff.track.eq("ChIP_seq")).sum()), n_PPI_mapped=int(mm.mapping_status.eq("in_network").sum()), n_F4_samples=int(mediation.n_samples), F4_testable=bool(mediation.testable)))
         self.save(pd.DataFrame(st1), "union_coverage.tsv")
         print(f"Selection and F1–F3 summaries: {len(self.cohorts)} cohorts", flush=True)
 
 
 
     def ppi_contributions(self, per_mf):
-        """Shares of positive degree-pool excess, per distinct union network node.
+        """Summarize saved pipeline contributions per distinct union network node.
 
         These shares do not decompose the group null or assign gene significance.
         Ensembl aliases for one Entrez node receive one combined row.
@@ -324,25 +259,31 @@ class Analysis:
         contributions, concentration = [], []
         union = per_mf[per_mf.analysis.eq("union") & per_mf.eligible_for_group_test]
         for cohort in self.cohorts:
+            saved_contributions = self.read(
+                self.base("union", cohort) / "evaluation/ppi_proximity_per_mf.tsv.gz",
+                float_precision="round_trip")
             for measure in ("harmonic", "pagerank"):
                 rows = union[union.cohort.eq(cohort)]
+                shares = saved_contributions[saved_contributions.measure.eq(measure)]
+                rows = rows.merge(shares[["MF_ensembl", "contribution"]], on="MF_ensembl", how="left")
                 nodes = rows.groupby("entrez_id", sort=False).agg(
                     MF=("MF", joined), MF_ensembl=("MF_ensembl", joined),
                     score=(f"{measure}_score", "first"),
                     degree_pool_mean=(f"{measure}_degree_bin_null_mean", "first"),
-                    excess=(f"{measure}_degree_bin_excess", "first")).reset_index()
+                    excess=(f"{measure}_degree_bin_excess", "first"),
+                    contribution=("contribution", "first")).reset_index()
                 nodes["positive_excess"] = nodes.excess.clip(lower=0)
                 total = nodes.positive_excess.sum()
-                nodes["positive_mass_fraction"] = nodes.positive_excess / total if total > 0 else np.nan
+                nodes["positive_mass_fraction"] = nodes.pop("contribution")
                 nodes["cohort"], nodes["measure"] = cohort, measure
-                nodes = nodes.sort_values(["positive_excess", "MF"], ascending=[False, True])
+                nodes = nodes.sort_values(["positive_mass_fraction", "MF"], ascending=[False, True])
                 contributions.append(nodes)
-                positive = nodes[nodes.positive_excess.gt(0)]
+                positive = nodes[nodes.positive_mass_fraction.gt(0)]
                 concentration.append(dict(cohort=cohort, measure=measure, n_in_network=len(nodes),
                     n_positive_excess=len(positive), top1_gene=joined(positive.head(1).MF),
                     top3_genes=";".join(positive.head(3).MF),
-                    top1_positive_mass_fraction=positive.head(1).positive_excess.sum() / total if total > 0 else np.nan,
-                    top3_positive_mass_fraction=positive.head(3).positive_excess.sum() / total if total > 0 else np.nan,
+                    top1_positive_mass_fraction=positive.head(1).positive_mass_fraction.sum(min_count=1),
+                    top3_positive_mass_fraction=positive.head(3).positive_mass_fraction.sum(min_count=1),
                     positive_excess_mass=total))
         self.save(pd.concat(contributions, ignore_index=True), "network_positive_contributions.tsv")
         self.save(pd.DataFrame(concentration), "network_contribution_concentration.tsv")

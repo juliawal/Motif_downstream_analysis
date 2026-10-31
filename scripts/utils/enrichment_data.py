@@ -31,7 +31,7 @@ def short_cohort(cohort):
 def prepare(source):
     all_terms = pd.read_csv(source, sep='\t')
     union = all_terms[all_terms.analysis.eq('union') & all_terms.adj_p_value.lt(.05)].copy()
-    terms = union[union.n_mf_symbols_in_term.ge(3)].copy()
+    terms = union[union.term_has_min_mf_overlap].copy()
     terms['term_id'] = terms.term_name.str.extract(r'(GO:\d+|R-HSA-\d+)', expand=False)
     terms['display_category'] = terms.descriptive_theme
     terms.loc[terms.term_id.isin(IMMUNE_IDS), 'display_category'] = 'immune_cell_state'

@@ -47,9 +47,9 @@ def figure(terms, rank, summary, output_dir):
         fig.text(.025,y,letter,fontsize=9,weight='bold',va='top')
         fig.text(.059,y,text,fontsize=8,weight='bold',va='top')
     title(.976,'A',f'Functional enrichment across {len(rank)} cohorts')
-    fig.text(.025,.949,'Union · all cohorts with supported terms',fontsize=6.8,color=GREY)
+    fig.text(.025,.938,'Union · all cohorts with supported terms',fontsize=6.8,color=GREY)
     fig.text(.025,.902,'Cohort',fontsize=6.4,color=GREY)
-    fig.text(.928,.921,'Lowest term\nadjusted p\n(all categories)',fontsize=8,color=GREY,ha='center',va='top')
+    fig.text(.920,.921,'Lowest\nadjusted p-value\nover all terms',fontsize=8,color=GREY,ha='center',va='top')
     cohorts=rank.cohort.tolist()
     for k,(category,(label,header,color)) in enumerate(CATEGORIES.items()):
         left=.205+k*.168
@@ -77,16 +77,16 @@ def figure(terms, rank, summary, output_dir):
                 yy=.49+.37*(len(rank)-.4-i)/(len(rank)+.2)
                 fig.text(.025,yy,short_cohort(cohort),fontsize=6.5,va='center',weight='normal')
                 value=rank.loc[rank.cohort.eq(cohort),'minimum_adjusted_p_value'].iloc[0]
-                fig.text(.928,yy,f'{value:.2g}',fontsize=6.3,ha='center',va='center',color=GREY)
+                fig.text(.920,yy,f'{value:.2g}',fontsize=6.3,ha='center',va='center',color=GREY)
     fig.text(.53,.454,'Fold enrichment (log scale)',ha='center',fontsize=7)
-    fig.text(.025,.431,'Point: median  ·  Line: term range  ·  Number: supported terms',fontsize=6.0,color=GREY)
+    fig.text(.025,.431,'Point: median  ·  Line: term range  ·  Number of supported terms',fontsize=6.0,color=GREY)
     membership=[]
     def matrix(cohort, specific_id, letter, top, bottom):
         broad=terms[(terms.cohort==cohort)&(terms.term_id=='GO:0000977')].iloc[0]
         specific=terms[(terms.cohort==cohort)&(terms.term_id==specific_id)].iloc[0]
         a=set(broad.mf_symbols_in_term.split(';'));b=set(specific.mf_symbols_in_term.split(';'))
         order=sorted(b)+sorted(a-b)
-        title(top,letter,f'{cohort}: overlapping annotations share candidates')
+        title(top,letter,f'{cohort}: shared genes between terms')
         cell_width=.76/21
         fig.text(.205+cell_width*len(order),top-.025,f'{len(b)} shared genes',fontsize=6.8,ha='right',color=GREY)
         ax=fig.add_axes([.205,bottom,cell_width*len(order),.04])

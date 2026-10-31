@@ -70,11 +70,11 @@ def main():
 
     fig=plt.figure(figsize=(156/25.4,173/25.4))
     positions=[(.19,.235),(.48,.205),(.735,.245)]
-    for (left,_),letter,heading in zip(positions,'ABC',['Harmonic','PageRank','Gene contribution']):
+    for (left,_),letter,heading in zip(positions,'ABC',['Harmonic','PageRank','Top three candidates']):
         title(fig,left,.982,letter,heading,fs=8)
-    for measure,x in [('harmonic',.307),('pagerank',.582)]:
+    for measure,(x,_) in zip(['harmonic','pagerank'],positions[:2]):
         n=int(effects.loc[effects.measure.eq(measure),'p_value'].le(.05).sum())
-        fig.text(x,.951,f'{n}/{len(cohorts)} nominal p ≤ 0.05',fontsize=6.2,color=GREY,ha='center')
+        fig.text(x,.951,f'{n}/{len(cohorts)} cohorts significant',fontsize=6.2,color=GREY,ha='left')
     fig.legend(handles=[Line2D([],[],marker='o',lw=0,color=BLUE,markersize=3,label='Harmonic'),Line2D([],[],marker='s',lw=0,color=ORANGE,markersize=3,label='PageRank')],loc='lower left',bbox_to_anchor=(.728,.936),ncol=2,frameon=False,fontsize=6.2,handlelength=.6,columnspacing=.7,handletextpad=.4)
     axs=[]
     labels=[c.replace('SKCM_METASTATIC','SKCM met.').replace('SKCM_PRIMARY','SKCM primary') for c in cohorts]
@@ -100,14 +100,16 @@ def main():
             ax.set_xlabel('p-value (log scale)',labelpad=2,fontsize=6.5)
         else:
             cc=concentration.pivot(index='cohort',columns='measure',values='top3_positive_mass_fraction').loc[cohorts]*100
+            for measure,color in [('harmonic',BLUE),('pagerank',ORANGE)]:
+                ax.axvline(cc[measure].median(),color=color,ls='--',lw=.8,zorder=2.5)
             for i,r in enumerate(cc.itertuples()):
                 ax.plot([r.harmonic,r.pagerank],[i,i],color='#B5C0C8',lw=.8)
             ax.scatter(cc.harmonic,np.arange(len(cohorts)),c=BLUE,s=10,zorder=3)
             ax.scatter(cc.pagerank,np.arange(len(cohorts)),c=ORANGE,s=10,zorder=3,marker='s')
-            ax.set_xlim(0,103);ax.set_xticks([0,50,100]);ax.set_xlabel('Contribution of the\ntop three genes (%)',labelpad=2,fontsize=6.5)
-            fig.text(.735,.246,'Medians: ',fontsize=6.4,color=GREY)
-            fig.text(.823,.246,f'{cc.harmonic.median():.1f}%',fontsize=6.4,color=BLUE)
-            fig.text(.900,.246,f'{cc.pagerank.median():.1f}%',fontsize=6.4,color=ORANGE)
+            ax.set_xlim(0,103);ax.set_xticks([0,50,100]);ax.set_xlabel('Share of the sum of positive\ndifferences contributed by\nthe top three candidates (%)',labelpad=2,fontsize=6.5)
+            fig.text(.735,.225,'Medians: ',fontsize=6.4,color=GREY)
+            fig.text(.823,.225,f'{cc.harmonic.median():.1f}%',fontsize=6.4,color=BLUE)
+            fig.text(.900,.225,f'{cc.pagerank.median():.1f}%',fontsize=6.4,color=ORANGE)
     fig.legend(handles=[Line2D([],[],marker='o',lw=0,color=INK,markersize=3,label='p ≤ 0.05'),Line2D([],[],marker='o',lw=0,color=INK,markerfacecolor='white',markersize=3,label='p > 0.05')],
      loc='lower left',bbox_to_anchor=(.025,.239),frameon=False,ncol=2,fontsize=6,handletextpad=.4,columnspacing=.8)
 

@@ -10,7 +10,7 @@ Defaults read analysis_results/ and write ucec_motif_binding.pdf
 to figures/main/, with plotted source rows in analysis_results/.
 Use --evidence-dir and --output-dir to select other locations. No models,
 hypothesis tests or multiple-testing corrections are recomputed.
-Panels A and B are stacked at 156 x 163 mm for a portrait manuscript page.
+Panels A and B are stacked at 156 x 179 mm for a portrait manuscript page.
 """
 from pathlib import Path
 import sys
@@ -30,6 +30,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
+from matplotlib.font_manager import FontProperties
+from matplotlib.textpath import TextPath
+from matplotlib.transforms import ScaledTranslation
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -49,7 +52,7 @@ def write_table(path, rows):
 
 
 def draw_portrait(union, lookup, settings_order, groups):
-    """Stack both panels at final print size (156 x 163 mm)."""
+    """Stack both panels at final print size (156 x 179 mm)."""
     plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 9,
                          'axes.labelsize': 9, 'xtick.labelsize': 8.5,
                          'ytick.labelsize': 9, 'pdf.fonttype': 42,
@@ -59,21 +62,21 @@ def draw_portrait(union, lookup, settings_order, groups):
     cmap = LinearSegmentedColormap.from_list(
         'F1_difference', ['#C45D19', '#FBFBFA', '#0072B2'])
     norm = Normalize(-55, 55)
-    fig = plt.figure(figsize=(156 / 25.4, 163 / 25.4))
+    fig = plt.figure(figsize=(156 / 25.4, 179 / 25.4))
 
     # Millimetres keep the two row grids and their text at final print size.
     def axes(left, bottom, width, height):
-        return fig.add_axes([left / 156, bottom / 163, width / 156, height / 163])
+        return fig.add_axes([left / 156, bottom / 179, width / 156, height / 179])
 
     def heading(x, y, text, **kwargs):
-        return fig.text(x / 156, y / 163, text, **kwargs)
+        return fig.text(x / 156, y / 179, text, **kwargs)
 
-    labels_a = axes(1, 90, 19, 49)
-    rates = axes(22, 90, 66, 49)
-    targets = axes(94, 90, 26, 49)
-    backgrounds = axes(123, 90, 32, 49)
-    labels_b = axes(1, 14, 19, 49)
-    settings = axes(22, 14, 133, 49)
+    labels_a = axes(1, 106, 19, 49)
+    rates = axes(22, 106, 66, 49)
+    targets = axes(94, 106, 26, 49)
+    backgrounds = axes(123, 106, 32, 49)
+    labels_b = axes(1, 14, 19, 65)
+    settings = axes(22, 14, 133, 65)
     for ax in [labels_a, rates, targets, backgrounds, labels_b, settings]:
         ax.set_ylim(len(union) - .5, -.5)
         ax.set_yticks([])
@@ -86,29 +89,29 @@ def draw_portrait(union, lookup, settings_order, groups):
     rates.spines['bottom'].set_visible(True)
     rates.grid(axis='x', color='#E4E8EB', linewidth=.5)
     rates.set_axisbelow(True)
-    rates.set_xlabel('CpG windows with ≥1 motif hit (%)', labelpad=3)
+    rates.set_xlabel('Percentage of analysed CpG windows with at least one motif hit', labelpad=3)
     settings.set_xlim(-.5, 2.5)
 
-    heading(1, 159, 'A  Union target and background hit rates',
+    heading(1, 175, 'A  Union target and background hit rates in UCEC',
             fontsize=10.5, weight='bold')
-    heading(1, 153.5, f'UCEC · FIMO · all {len(union)} evaluated factors', fontsize=9)
+    heading(1, 169.5, f'UCEC · FIMO · all {len(union)} evaluated factors', fontsize=9)
     fig.legend(handles=[
         Line2D([], [], color=blue, marker='o', linestyle='none', markersize=4.5,
                label='Target'),
         Line2D([], [], markeredgecolor=grey, markerfacecolor='white', marker='s',
                linestyle='none', markersize=4.5, label='Background')],
-        loc='center left', bbox_to_anchor=(22 / 156, 146 / 163),
+        loc='center left', bbox_to_anchor=(22 / 156, 162 / 179),
         borderaxespad=0, frameon=False, ncol=2, fontsize=8.5,
         handletextpad=.5, columnspacing=1.3)
     for x, text in [(107, 'Target'), (139, 'Background')]:
-        heading(x, 147, text, ha='center', fontsize=9)
-        heading(x, 142.5, 'hits / windows', ha='center', fontsize=8.5)
+        heading(x, 158.5, text, ha='center', fontsize=9)
+    heading(124, 163, 'hits / analysed CpG windows', ha='center', fontsize=8.5)
 
-    heading(1, 73.5, 'B  Differences across settings', fontsize=10.5, weight='bold')
+    heading(1, 89.5, 'B  UCEC hit rate differences across settings', fontsize=10.5, weight='bold')
     for x, (analysis, label) in enumerate(zip(settings_order, ['S1', 'S2', 'S3'])):
         centre = 22 + (x + .5) * 133 / 3
-        heading(centre, 68.5, label, ha='center', fontsize=9.5, weight='bold')
-        heading(centre, 64.5, f"p = {float(groups[analysis]['p_value_sign_test']):.3g}",
+        heading(centre, 84.5, label, ha='center', fontsize=9.5, weight='bold')
+        heading(centre, 80.5, f"p = {float(groups[analysis]['p_value_sign_test']):.3g}",
                 ha='center', fontsize=9)
 
     for yy, row in enumerate(union):
@@ -124,20 +127,30 @@ def draw_portrait(union, lookup, settings_order, groups):
         for ax, hit_key, count_key in [
                 (targets, 'n_target_hits', 'n_target_cpgs'),
                 (backgrounds, 'n_background_hits', 'n_background_cpgs')]:
-            ax.text(.5, yy, f'{int(row[hit_key]):,}/{int(row[count_key]):,}',
+            ax.text(.5, yy, f'{int(row[hit_key])}/{int(row[count_key])}',
                     ha='center', va='center', fontsize=9)
         for x, analysis in enumerate(settings_order):
             effect = 100 * float(lookup[(analysis, row['MF_ensembl'])]['difference'])
             settings.add_patch(Rectangle((x - .49, yy - .47), .98, .94,
                                          facecolor=cmap(norm(effect)), edgecolor='white', lw=.35))
-            settings.text(x, yy, '0.0' if effect == 0 else f'{effect:+.1f}',
-                          ha='center', va='center', weight=weight, fontsize=9.5,
+            label = '0.0' if effect == 0 else f'{effect:+.1f}'
+            # Centre the visible numeral outlines, including their signs.
+            # A typographic line box reserves descender space below digits,
+            # which otherwise makes va='center' look too high in the cell.
+            font = FontProperties(family='DejaVu Sans', weight=weight, size=9.5)
+            bounds = TextPath((0, 0), label, prop=font).get_extents()
+            offset = ScaledTranslation(-(bounds.x0 + bounds.width / 2) / 72,
+                                       -(bounds.y0 + bounds.height / 2) / 72,
+                                       fig.dpi_scale_trans)
+            settings.text(x, yy, label, transform=settings.transData + offset,
+                          ha='left', va='baseline', fontproperties=font,
                           color='white' if abs(effect) > 35 else dark)
     cax = axes(47, 9, 83, 1.6)
     cb = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cax,
                       orientation='horizontal', ticks=[-50, 0, 50])
     cb.ax.tick_params(labelsize=8.5, length=2, pad=1)
-    cb.set_label('Target − background (percentage points)', fontsize=9, labelpad=1)
+    cb.set_label('Target hit rates (in %) − background hit rates (in %)',
+                 fontsize=9, labelpad=1)
     cb.outline.set_visible(False)
     return fig
 
@@ -158,7 +171,7 @@ def main():
     all_rows = read(MEASUREMENTS)
     rows = [r for r in all_rows if r['cohort']=='UCEC' and r['track']=='FIMO']
     lookup = {(r['analysis'], r['MF_ensembl']):r for r in rows}
-    union = sorted([r for r in rows if r['analysis']=='union' and r['f1_usable_strict']=='True'],
+    union = sorted([r for r in rows if r['analysis']=='union' and r['status']=='tested'],
                    key=lambda r:-float(r['difference']))
     settings_order = ['rank_1','rank_2','rank_3']
     group_rows = [r for r in read(GROUPS) if r['cohort']=='UCEC' and r['track']=='FIMO'
@@ -170,7 +183,7 @@ def main():
     write_table(DATA / 'ucec_motif_binding_tests.tsv',[groups[a] for a in settings_order])
 
     fig = draw_portrait(union, lookup, settings_order, groups)
-    artifacts.save_figure(fig, OUT/'ucec_motif_binding.pdf',dpi=260,facecolor='white')
+    artifacts.save_figure(fig, OUT/'ucec_motif_binding.pdf',dpi=300,facecolor='white')
     plt.close(fig)
     print('Finished figure and data export.')
 

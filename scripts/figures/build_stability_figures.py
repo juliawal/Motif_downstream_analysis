@@ -108,7 +108,7 @@ def setting_overlap(evidence):
         norm = Normalize(vmin=low, vmax=high)
         ax.imshow(values.to_numpy(), cmap=cmap, norm=norm, aspect="auto")
         ax.set_title(title, loc="left", pad=28, fontsize=8.5, weight="bold")
-        ax.text(.5, 1.027, unit, transform=ax.transAxes, ha="center", fontsize=7.5)
+        ax.text(.5, 1.027, unit, transform=ax.transAxes, ha="center", fontsize=7.4)
         ax.set(xticks=range(len(labels)), xticklabels=labels, yticks=range(len(cohorts)),
                yticklabels=[shared.cohort_label(c) for c in cohorts], ylim=(len(cohorts)-.5, -.5))
         ax.xaxis.tick_top()
@@ -123,8 +123,7 @@ def setting_overlap(evidence):
                 value = values.iloc[i, j]
                 ax.text(j, i, format(value, fmt), ha="center", va="center", fontsize=7.5,
                         color=cell_text_color(cmap(norm(value))))
-    fig.supxlabel("A: selected lists from all ten runs. B: mean over 20 splits of the same ten runs.\n"
-                  "The two indices describe different comparisons; the union has no seed-stability estimate.", fontsize=7)
+    fig.supxlabel("A: selected lists from all ten runs. B: mean over 20 splits of the same ten runs.", fontsize=7.4)
     shared.data(pairs, "setting_overlap")
     shared.save(fig, "setting_overlap_and_stability")
 

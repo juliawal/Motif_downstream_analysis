@@ -41,7 +41,6 @@ def build(analysis, output):
     coverage = read("combined_evidence/union_coverage.tsv").sort_values("cohort")
     f4 = ordered(read("associations/association_cohort_summary.tsv"), ["cohort", "_arm"])
     cross = read("combined_evidence/union_positive_contexts.tsv").sort_values(["MF", "cohort"])
-    identities = ordered(read("combined_evidence/binding_identity_contexts.tsv"), ["MF", "cohort", "_arm"])
     erg = ordered(read("associations/erg_tdrd1_binding.tsv"), ["_arm", "G_prime_distance_bp", "CpG"])
     cases = ordered(read("associations/case_association_summary.tsv"), ["_case", "cohort", "_arm"])
     criteria = ordered(read("combined_evidence/case_evaluation_criteria.tsv"), ["_case", "cohort", "_arm"])
@@ -53,14 +52,14 @@ def build(analysis, output):
     context = read("associations/binding_context_sensitivity.tsv")
     hnf_context = context[context.MF.eq("HNF1B") & context.cohort.eq("UCEC")].copy()
     for df, filename in [(coverage, "union_evaluation_coverage.tsv"), (f4, "association_coverage.tsv"),
-                         (cross, "combined_positive_contexts.tsv"), (identities, "binding_identity_sensitivity.tsv"),
+                         (cross, "combined_positive_contexts.tsv"),
                          (erg, "erg_tdrd1_triplets.tsv"), (cases, "case_association_table.tsv"),
                          (criteria, "case_criteria_table.tsv"),
                          (hnf_binding, "hnf1b_binding_directions.tsv"),
                          (hnf_context, "hnf1b_genomic_context_sensitivity.tsv")]:
         save(df, filename)
 
-    # Retain analysis copies of the overlaps; S6 records their publication location.
+    # Retain analysis copies of the overlaps; the index records their publication location.
     # Copy original bytes so leading-zero state patterns and compressed records
     # survive unchanged; this step performs no overlap analysis or new testing.
     overlap_specs = [
@@ -101,7 +100,7 @@ def build(analysis, output):
                   "columns": ";".join(robustness_columns) if key == "D" else "*"}
         overlap_records.append(record)
     pd.DataFrame(overlap_records).to_csv(output / "overlap_index.tsv", sep="\t", index=False)
-    print(f"Wrote nine manuscript data tables and an index of {len(copied)} overlap files to {output}")
+    print(f"Wrote eight manuscript data tables and an index of {len(copied)} overlap files to {output}")
 
 
 if __name__ == "__main__":
