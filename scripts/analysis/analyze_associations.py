@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize the compact F4 export without historical result caches.
+"""Summarize the saved F4 export for the paper.
 
 One branch is read at a time, retaining at most four cohort pair tables and the
 small union columns required for cross-cohort exact-CpG recurrence. Original

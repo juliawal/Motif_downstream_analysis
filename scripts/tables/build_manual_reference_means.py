@@ -2,8 +2,8 @@
 """Summarise saved union evidence for the manual-candidate reference table.
 
 Uses the availability flags supplied by integrate_evidence.py. Cohort-level
-means weight each evaluable MF--cohort combination equally. Recurrence counts
-weight each eligible MF equally; supporting-cohort counts weight each repeated
+means weight each evaluable MF--cohort combination equally. Direction-consistency
+counts weight each eligible MF equally; tested-cohort counts weight each repeated
 MF--CpG pair equally. No evaluation is run here.
 """
 import argparse
@@ -100,16 +100,16 @@ def summarize_reference_means(rows, recurrence_rows=None):
         add('F4', sign.capitalize() + ' directions among supported pairs',
             [ratio(r, 'n_a_supported_' + sign, 'n_supported_pairs') for r in rows], r'\%', 1, scale=100)
     if recurrence_rows is not None:
-        add_recurrence_references(recurrence_rows, rows, add)
+        add_direction_references(recurrence_rows, rows, add)
     return references
 
 
-def add_recurrence_references(recurrence_rows, contexts, add):
-    # Every eligible MF counts once, including MFs with zero recurrent support.
+def add_direction_references(recurrence_rows, contexts, add):
+    # Every eligible MF counts once, including zero consistent-direction pairs.
     # Eligibility requires at least one exact pair tested in >=2 cohorts.
     genes = {r['MF_ensembl'] for r in contexts}
     counts = defaultdict(lambda: dict(total=0, negative=0, positive=0, mixed=0))
-    supported_cohorts = []
+    tested_cohorts = []
     seen = set()
     for row in recurrence_rows:
         if int(row['n_tested_cohorts']) < 2:
@@ -119,18 +119,18 @@ def add_recurrence_references(recurrence_rows, contexts, add):
             raise ValueError(f'Unexpected or duplicate recurrent-pair record: {key}')
         seen.add(key)
         gene = counts[key[0]]
-        strict = row['strict_recurrent_supported'] == 'True'
-        gene['total'] += strict
-        gene['negative'] += strict and int(row['n_negative']) > 0
-        gene['positive'] += strict and int(row['n_positive']) > 0
-        gene['mixed'] += row['mixed_supported_signs'] == 'True'
-        supported_cohorts.append(int(row['n_supported_cohorts']))
-    for key, label in [('total', 'Recurrent MF--CpG pairs'),
-                       ('negative', 'Recurrent pairs with negative direction'),
-                       ('positive', 'Recurrent pairs with positive direction'),
-                       ('mixed', 'Pairs with opposite directions in supported cohorts')]:
+        consistent = row['same_sign_all_tested'] == 'True'
+        gene['total'] += consistent
+        gene['negative'] += row['direction_all_tested'] == 'negative'
+        gene['positive'] += row['direction_all_tested'] == 'positive'
+        gene['mixed'] += row['direction_all_tested'] == 'mixed'
+        tested_cohorts.append(int(row['n_tested_cohorts']))
+    for key, label in [('total', 'Pairs with consistent association directions'),
+                       ('negative', 'Pairs with negative directions throughout'),
+                       ('positive', 'Pairs with positive directions throughout'),
+                       ('mixed', 'Pairs with opposite directions across tested cohorts')]:
         add('F4', label, [r[key] for r in counts.values()], unit='MF')
-    add('F4', 'Cohorts supporting the same MF--CpG pair', supported_cohorts,
+    add('F4', 'Cohorts in which the same MF--CpG pair was tested', tested_cohorts,
         unit='MF--CpG')
 
 
@@ -175,9 +175,11 @@ Stage & Measure & $n$ & Mean \\
 \end{tabularx}
 \par\smallskip
 \begin{minipage}{\linewidth}
-\footnotesize $n$ is the number of evaluable units; each unit counts once. MF--cohort means include all evaluable candidate combinations across the 34 union cohorts, including the candidates discussed in \Cref{sec:results-manual17,sec:results-candidate-priorities}. Percentages are calculated per combination before averaging. Missing measurements are excluded. F4 pair counts and support percentages require at least one tested pair; zero supported pairs contribute zero. Direction percentages require at least one supported pair. pp: percentage points.
-
-Recurrence means include MFs with at least one pair tested in two or more cohorts, including MFs with no recurrent support. Recurrent pairs have F4 support in at least two cohorts and the same nonzero direction in all tested cohorts. The final row averages the number of supporting cohorts across pairs tested in at least two cohorts, including pairs without support.
+\small The reference means summarise the available union results across all candidate MFs in the 34 cohorts, including the candidates discussed in \Cref{sec:results-manual17,sec:results-candidate-priorities}. They provide a comparison for the individual candidate results. Means are calculated across MF--cohort combinations, individual MFs or MF--CpG pairs, as indicated. $n$ is the number of evaluable units for each measure; each unit is weighted equally.
+\par\smallskip
+For MF--cohort means, the same MF is counted separately in each cohort. Percentages are calculated per combination before averaging. Missing measurements are excluded. F4 pair counts and support percentages require at least one tested pair; direction percentages require at least one supported pair.
+\par\smallskip
+The per-MF direction counts include MFs with at least one pair tested in two or more cohorts, including MFs with no consistent pairs. A pair has a consistent direction if its coefficient $a$ has the same nonzero sign in every tested cohort, regardless of F4 support. The final row reports the mean number of tested cohorts across all pairs tested in two or more cohorts. pp: percentage points; matched mean: mean score of degree-matched background proteins.
 \end{minipage}
 \end{table}
 '''

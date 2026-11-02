@@ -15,7 +15,7 @@ ANALYSES = [
     'integrate_evidence.py',
     'analyze_manual_candidates.py',
     'prepare_pair_evidence.py',
-    'analyze_candidate_coverage_and_signs.py',
+    'prepare_direction_results.py',
     'prepare_candidate_results.py',
     'compare_literature_genes.py',
 ]
@@ -50,11 +50,10 @@ ANALYSIS_TABLES = {
         'additional_network_group_tests', 'additional_pooled_network_scores',
         'additional_enrichment_all_tests', 'additional_enrichment_terms',
         'additional_enrichment_memberships',
-        'candidate_evidence', 'candidate_shortlist', 'candidate_contexts',
-        'candidate_coverage_flags', 'expression_methylation_review_queue',
-        'screen_threshold_sensitivity',
+        'candidate_shortlist', 'candidate_contexts',
     ],
-    'pair_directions': ['strict_recurrent_supported_pairs', 'pairs_with_supported_sign_reversals'],
+    'pair_directions': ['consistent_direction_pairs', 'pairs_with_mixed_directions',
+                        'pair_direction_counts_by_gene'],
     'literature_comparison': [
         'literature_gene_comparison', 'literature_paper_contexts', 'literature_gene_summary',
         'literature_evaluation_summary', 'literature_shortlist_comparison', 'literature_comparison',
@@ -63,7 +62,6 @@ ANALYSIS_TABLES = {
 DATA_MODULES = [
     'tables/build_manual_reference_means.py',
     'tables/build_union_enrichment_terms.py',
-    'tables/build_union_directions.py',
     'tables/build_manuscript_tables.py',
 ]
 

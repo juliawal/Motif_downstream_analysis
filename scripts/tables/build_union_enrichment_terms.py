@@ -6,7 +6,7 @@ From the project root:
 
 Reads analysis_results/binding_network_enrichment/enriched_terms.tsv.
 Writes the full term records and category mapping in analysis_results/.
-The files supply tab:f3-supported-terms and functional_enrichment.pdf. The manuscript
+The files supply tab:f3-enriched-terms and functional_enrichment.pdf. The manuscript
 rows are rendered by scripts/build_tables.py.
 
 Use --evidence-dir and --output-dir for alternative folders. Data preparation

@@ -17,9 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
 from project_layout import figure_data_dir
 import argparse
 import os
-import tempfile
 
-os.environ.setdefault('MPLCONFIGDIR', str(Path(tempfile.gettempdir()) / 'motif_f3_mpl'))
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
@@ -43,7 +42,7 @@ def figure(terms, rank, summary, output_dir):
         fig.text(.025,y,letter,fontsize=9,weight='bold',va='top')
         fig.text(.059,y,text,fontsize=8,weight='bold',va='top')
     title(.976,'A',f'Functional enrichment across {len(rank)} cohorts')
-    fig.text(.025,.938,'Union · all cohorts with supported terms',fontsize=6.8,color=GREY)
+    fig.text(.025,.938,'Union · all cohorts with enriched terms',fontsize=6.8,color=GREY)
     fig.text(.025,.902,'Cohort',fontsize=6.4,color=GREY)
     fig.text(.920,.921,'Lowest\nadjusted p-value\nover all terms',fontsize=8,color=GREY,ha='center',va='top')
     cohorts=rank.cohort.tolist()
@@ -75,7 +74,7 @@ def figure(terms, rank, summary, output_dir):
                 value=rank.loc[rank.cohort.eq(cohort),'minimum_adjusted_p_value'].iloc[0]
                 fig.text(.920,yy,f'{value:.2g}',fontsize=6.3,ha='center',va='center',color=GREY)
     fig.text(.53,.454,'Fold enrichment (log scale)',ha='center',fontsize=7)
-    fig.text(.025,.431,'Point: median  ·  Line: term range  ·  Number of supported terms',fontsize=6.0,color=GREY)
+    fig.text(.025,.431,'Point: median  ·  Line: minimum–maximum  ·  Number of enriched terms',fontsize=6.0,color=GREY)
     membership=[]
     def matrix(cohort, specific_id, letter, top, bottom):
         broad=terms[(terms.cohort==cohort)&(terms.term_id=='GO:0000977')].iloc[0]

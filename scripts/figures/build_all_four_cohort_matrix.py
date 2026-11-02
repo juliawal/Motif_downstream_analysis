@@ -11,10 +11,9 @@ import argparse
 import os
 from pathlib import Path
 import sys
-import tempfile
 
 sys.dont_write_bytecode = True
-os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "motif_figure_mpl"))
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 
 import matplotlib
 matplotlib.use("Agg")

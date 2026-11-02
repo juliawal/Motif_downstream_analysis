@@ -20,9 +20,8 @@ from project_layout import figure_data_dir
 import argparse
 import csv
 import os
-import tempfile
 
-os.environ.setdefault('MPLCONFIGDIR', str(Path(tempfile.gettempdir()) / 'motif_f1_ucec_mpl'))
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -112,10 +111,8 @@ def draw_portrait(union, lookup, settings_order, groups):
                 ha='center', fontsize=9)
 
     for yy, row in enumerate(union):
-        focal = row['MF'] in ['HNF1A', 'HNF1B', 'FOXA2']
-        weight = 'bold' if focal else 'normal'
         for ax in [labels_a, labels_b]:
-            ax.text(0, yy, row['MF'], va='center', weight=weight, fontsize=9)
+            ax.text(0, yy, row['MF'], va='center', weight='normal', fontsize=9)
         target, background = 100 * float(row['target_hit_rate']), 100 * float(row['bg_hit_rate'])
         rates.plot([background, target], [yy, yy], color='#B1BBC2', lw=1.25, zorder=2)
         rates.scatter(background, yy, s=24, marker='s', facecolor='white',
@@ -134,7 +131,7 @@ def draw_portrait(union, lookup, settings_order, groups):
             # Centre the visible numeral outlines, including their signs.
             # A typographic line box reserves descender space below digits,
             # which otherwise makes va='center' look too high in the cell.
-            font = FontProperties(family='DejaVu Sans', weight=weight, size=9.5)
+            font = FontProperties(family='DejaVu Sans', weight='normal', size=9.5)
             bounds = TextPath((0, 0), label, prop=font).get_extents()
             offset = ScaledTranslation(-(bounds.x0 + bounds.width / 2) / 72,
                                        -(bounds.y0 + bounds.height / 2) / 72,

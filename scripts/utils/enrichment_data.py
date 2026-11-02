@@ -25,7 +25,7 @@ IMMUNE_IDS = {
 
 
 def short_cohort(cohort):
-    return cohort.replace('SKCM_METASTATIC', 'SKCM met.').replace('SKCM_PRIMARY', 'SKCM primary')
+    return cohort.replace('SKCM_METASTATIC', 'SKCM-MET').replace('SKCM_PRIMARY', 'SKCM-PRI')
 
 
 def prepare(source):
@@ -38,7 +38,7 @@ def prepare(source):
     terms['category_label'] = terms.display_category.map(lambda x: CATEGORIES[x][0])
     terms['category_order'] = terms.display_category.map({k:i for i,k in enumerate(CATEGORIES)})
     rank = terms.groupby('cohort', as_index=False).agg(
-        minimum_adjusted_p_value=('adj_p_value', 'min'), n_supported_terms=('term_id', 'size'))
+        minimum_adjusted_p_value=('adj_p_value', 'min'), n_enriched_terms=('term_id', 'size'))
     rank = rank.sort_values(['minimum_adjusted_p_value', 'cohort']).reset_index(drop=True)
     rank['cohort_rank'] = np.arange(1, len(rank)+1)
     terms = terms.merge(rank[['cohort', 'cohort_rank']], on='cohort')

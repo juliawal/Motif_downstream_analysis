@@ -13,9 +13,8 @@ import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
 from project_layout import figure_data_dir
-import tempfile
 
-os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "motif_v22_figure_mpl"))
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -31,8 +30,7 @@ import pandas as pd
 PROJECT = Path(__file__).resolve().parents[2]
 WORK = PROJECT / "analysis_results"
 ARMS = ["rank_1", "rank_2", "rank_3", "union"]
-LABELS = ["S1", "S2", "S3", "Union"]
-BLUE, TEAL, ORANGE, INK, GRAY, LIGHT = "#0072B2", "#009E73", "#D55E00", "#202A33", "#6E7881", "#E7ECEF"
+BLUE, INK, GRAY, LIGHT = "#0072B2", "#202A33", "#6E7881", "#E7ECEF"
 OUT = PROJECT / "figures/main"
 
 
@@ -57,7 +55,7 @@ def title(ax, label):
 
 
 def cohort_label(value):
-    return value.replace("SKCM_METASTATIC", "SKCM met.").replace("SKCM_PRIMARY", "SKCM primary")
+    return value.replace("SKCM_METASTATIC", "SKCM-MET").replace("SKCM_PRIMARY", "SKCM-PRI")
 
 
 def yes(value):

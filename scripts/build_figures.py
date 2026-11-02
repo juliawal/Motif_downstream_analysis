@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Alle Abbildungen des Papers und Supplements erzeugen."""
+"""Render all main-text and supplementary figures from saved analysis data."""
 import argparse
 from pathlib import Path
 import subprocess
@@ -29,7 +29,7 @@ def main():
         print(f"\nfigures {number}/{len(MODULES)}: {module}", flush=True)
         subprocess.run([sys.executable, str(ROOT / "scripts" / module)],
                        cwd=ROOT, check=True)
-    print("\nFertig: figures/", flush=True)
+    print("\nFinished: figures/", flush=True)
 
 
 if __name__ == "__main__":

@@ -49,7 +49,7 @@ def build(analysis, output):
                          (criteria, "case_criteria_table.tsv")]:
         save(df, filename)
 
-    # Keep the saved TCL1A case table independently of the retired case figure.
+    # Include the saved TCL1A values reported in the candidate results.
     tcl = pd.read_csv(table_data / "case_association_table.tsv", sep="\t", low_memory=False)
     tcl = tcl.query("MF == 'TCL1A' and cohort == 'TGCT'").set_index("analysis").reindex(ARMS)
     save(tcl.reset_index(), "tcl1a_associations.tsv")

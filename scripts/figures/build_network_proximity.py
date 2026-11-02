@@ -17,9 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
 from project_layout import figure_data_dir
 import argparse
 import os
-import tempfile
 
-os.environ.setdefault('MPLCONFIGDIR', str(Path(tempfile.gettempdir()) / 'motif_ppi_figure_mpl'))
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -76,7 +75,7 @@ def main():
         fig.text(x,.951,f'{n}/{len(cohorts)} cohorts significant',fontsize=6.2,color=GREY,ha='left')
     fig.legend(handles=[Line2D([],[],marker='o',lw=0,color=BLUE,markersize=3,label='Harmonic'),Line2D([],[],marker='s',lw=0,color=ORANGE,markersize=3,label='PageRank')],loc='lower left',bbox_to_anchor=(.728,.936),ncol=2,frameon=False,fontsize=6.2,handlelength=.6,columnspacing=.7,handletextpad=.4)
     axs=[]
-    labels=[c.replace('SKCM_METASTATIC','SKCM met.').replace('SKCM_PRIMARY','SKCM primary') for c in cohorts]
+    labels=[c.replace('SKCM_METASTATIC','SKCM-MET').replace('SKCM_PRIMARY','SKCM-PRI') for c in cohorts]
     for j,(left,width) in enumerate(positions):
         ax=fig.add_axes([left,.33,width,.595]);axs.append(ax)
         ax.set_ylim(-.7,len(cohorts)-.3);ax.invert_yaxis();ax.set_axisbelow(True)

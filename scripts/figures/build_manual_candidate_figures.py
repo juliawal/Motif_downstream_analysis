@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
 import argparse
 import json
 import os
-os.environ.setdefault('MPLCONFIGDIR', '/tmp/motif_26_figure_mpl')
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -30,7 +30,7 @@ args = parser.parse_args()
 SOURCE = args.data_dir.resolve()
 OUT = args.output_dir.resolve()
 OUT.mkdir(parents=True, exist_ok=True)
-BLUE, ORANGE, PURPLE, GREY = '#0072B2', '#C66D00', '#79549D', '#78848D'
+BLUE, ORANGE, GREY = '#0072B2', '#C66D00', '#78848D'
 PALE, POS, NEG = '#F3F6F8', '#B45C23', '#0072B2'
 mpl.rcParams.update({'font.family':'DejaVu Sans', 'font.size':8,
     'axes.labelsize':8, 'axes.titlesize':9, 'xtick.labelsize':7.2,
@@ -146,7 +146,7 @@ def render_overview():
 
 render_overview()
 
-# Detailed F4 counts/directions at final manuscript size (approved 29 October 2026).
+# Detailed F4 counts/directions at final manuscript size.
 # Keep the fixed canvas: tight bounding boxes would change the embedded font size.
 def render_f4_cohort_details():
     fig = draw_cohort_f4(read('manual_prioritised_contexts.tsv'))

@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
 from project_layout import figure_data_dir
 import os
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/motif_mpl")
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -98,7 +98,7 @@ plt.rcParams.update({
     "pdf.fonttype": 42, "axes.spines.top": False, "axes.spines.right": False,
     "axes.linewidth": .6, "savefig.dpi": 300,
 })
-labels = [c.replace("SKCM_METASTATIC", "SKCM met.").replace("SKCM_PRIMARY", "SKCM primary") for c in cohorts]
+labels = [c.replace("SKCM_METASTATIC", "SKCM-MET").replace("SKCM_PRIMARY", "SKCM-PRI") for c in cohorts]
 y = np.arange(len(cohorts))
 colors = ["#165A7A", "#75B6D0", "#D8E2E8"]
 teal = LinearSegmentedColormap.from_list("count_teal", ["#FFFFFF", "#DAEBE8", "#8CC9BE", "#258979", "#005545"])

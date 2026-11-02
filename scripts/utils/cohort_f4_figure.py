@@ -18,11 +18,12 @@ def draw_cohort_f4(data, *, height_mm=176):
      return seq
     split = min(range(1, len(genes)), key=lambda i: abs(len(sequence(genes[:i]))-len(sequence(genes[i:]))))
     sequences=[sequence(genes[:split]),sequence(genes[split:])]
-    height=max(map(len,sequences)); short={'SKCM_METASTATIC':'SKCM-M','SKCM_PRIMARY':'SKCM-P'}
+    height=max(map(len,sequences)); short={'SKCM_METASTATIC':'SKCM-MET','SKCM_PRIMARY':'SKCM-PRI'}
+    label_padding = .015 if d.cohort.isin(short).any() else 0
     fig=plt.figure(figsize=(156/25.4,height_mm/25.4))
     text_artists=[]
     for left,seq in zip([.105,.605],sequences):
-     ax=fig.add_axes([left,.15,.235,.72])
+     ax=fig.add_axes([left+label_padding,.15,.235-label_padding,.72])
      labels=[];ticks=[]
      for y,(kind,g,r) in enumerate(seq):
       if kind=='header':

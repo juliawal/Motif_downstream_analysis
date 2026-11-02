@@ -5,10 +5,10 @@ No models or original hypothesis tests are refitted. Union counts each pair once
 per cohort; the three settings are sensitivity analyses on the same patients.
 """
 import argparse
-import json
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from prepare_direction_results import classify_pair_directions
 
 ROOT = Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
@@ -17,7 +17,7 @@ parser.add_argument('--analysis-dir', type=Path, default=ROOT / 'analysis_result
 args = parser.parse_args()
 PIPELINE, ANALYSIS = args.pipeline_dir.resolve(), args.analysis_dir.resolve()
 DIRECTIONS = ANALYSIS / 'pair_directions'
-CANDIDATES = ANALYSIS / 'additional_candidates'
+CANDIDATES = ANALYSIS / 'candidate_evidence'
 for directory in [DIRECTIONS, CANDIDATES]:
     directory.mkdir(parents=True, exist_ok=True)
 K = ['MF_ensembl', 'CpG']
@@ -32,8 +32,6 @@ def write(d, path):
              compression={'method': 'gzip', 'mtime': 0} if path.suffix == '.gz' else None)
 
 
-# Preserve the historical screen before the three literature-based transfers.
-MANUAL = set(json.loads((ROOT / 'scripts/paper_cohorts_and_genes.json').read_text())['manual17'])
 u = read(ANALYSIS / 'combined_evidence/union_evidence_contexts.tsv')
 pairdir = PIPELINE / 'f4_methylation_factor_cpg_pairs'
 tables = []
@@ -68,7 +66,7 @@ for n, p in enumerate(pair_paths, 1):
     print(f'{n}/{len(pair_paths)} {cohort}: {len(d):,} pairs',flush=True)
 pairs = pd.concat(tables,ignore_index=True)
 
-# Pairwise recurrence includes every tested cohort, even if it lacks support.
+# Classify each exact pair once using every tested cohort, irrespective of F4 support.
 rec = pairs.groupby(K,sort=False).agg(MF=('MF','first'),n_input_cohorts=('cohort','size'),
     n_tested_cohorts=('tested','sum'),n_supported_cohorts=('supported','sum'),
     n_negative=('negative','sum'),n_positive=('positive','sum'),
@@ -76,26 +74,26 @@ rec = pairs.groupby(K,sort=False).agg(MF=('MF','first'),n_input_cohorts=('cohort
     n_selected_all_three=('selected_all_three','sum'),n_supported_all_four=('supported_all_four','sum'),
     a_min=('a','min'),a_max=('a','max'),a_median=('a','median')).reset_index()
 rec['mixed_tested_signs'] = rec.n_negative.gt(0)&rec.n_positive.gt(0)
-rec['mixed_supported_signs'] = rec.n_supported_negative.gt(0)&rec.n_supported_positive.gt(0)
-rec['same_sign_all_tested'] = rec.n_tested_cohorts.ge(2)&~rec.mixed_tested_signs&(rec.n_negative+rec.n_positive).eq(rec.n_tested_cohorts)
-rec['same_sign_supported_repeated'] = rec.n_supported_cohorts.ge(2)&~rec.mixed_supported_signs
-rec['strict_recurrent_supported'] = rec.same_sign_all_tested&rec.n_supported_cohorts.ge(2)
-rec['manual17'] = rec.MF.isin(MANUAL)
+rec['direction_all_tested'] = classify_pair_directions(rec)
+rec['same_sign_all_tested'] = rec.direction_all_tested.isin(['negative', 'positive'])
+rec['negative_all_tested'] = rec.direction_all_tested.eq('negative')
+rec['positive_all_tested'] = rec.direction_all_tested.eq('positive')
 rec['min_abs_a_all_tested'] = np.where(rec.mixed_tested_signs,0,np.minimum(rec.a_min.abs(),rec.a_max.abs()))
 write(rec,DIRECTIONS/'all_exact_pair_recurrence.tsv.gz')
-write(rec[rec.strict_recurrent_supported].sort_values(['n_supported_cohorts','n_supported_all_four','min_abs_a_all_tested'],ascending=False),DIRECTIONS/'strict_recurrent_supported_pairs.tsv')
-write(rec[rec.mixed_supported_signs],DIRECTIONS/'pairs_with_supported_sign_reversals.tsv')
+write(rec[rec.same_sign_all_tested].sort_values(['n_tested_cohorts','min_abs_a_all_tested','MF_ensembl','CpG'],ascending=[False,False,True,True]),DIRECTIONS/'consistent_direction_pairs.tsv')
+write(rec[rec.mixed_tested_signs],DIRECTIONS/'pairs_with_mixed_directions.tsv')
 
 # Fully auditable context matrix for all selected genes, including missing evidence.
 mc = pairs.groupby(['MF_ensembl','cohort']).agg(n_selected_all_three_pairs=('selected_all_three','sum'),n_supported_all_four_pairs=('supported_all_four','sum')).reset_index()
 u = u.merge(mc,on=['MF_ensembl','cohort'])
-u['manual17'] = u.MF.isin(MANUAL)
 write(u,CANDIDATES/'union_context_evidence.tsv')
-mr = rec.groupby('MF_ensembl').agg(n_unique_input_pairs=('CpG','size'),
+mr = rec.groupby(['MF_ensembl','MF']).agg(n_unique_input_pairs=('CpG','size'),
     n_repeated_tested_pairs=('n_tested_cohorts',lambda x:int(x.ge(2).sum())),
-    n_strict_recurrent_pairs=('strict_recurrent_supported','sum'),
-    n_repeated_supported_same_sign_pairs=('same_sign_supported_repeated','sum'),
-    n_supported_sign_reversals=('mixed_supported_signs','sum')).reset_index()
+    n_consistent_direction_pairs=('same_sign_all_tested','sum'),
+    n_consistent_negative_pairs=('negative_all_tested','sum'),
+    n_consistent_positive_pairs=('positive_all_tested','sum'),
+    n_mixed_direction_pairs=('mixed_tested_signs','sum')).reset_index()
+write(mr.sort_values(['MF','MF_ensembl']),DIRECTIONS/'pair_direction_counts_by_gene.tsv')
 genes = u.groupby(['MF_ensembl','MF']).agg(n_selected_cohorts=('cohort','size'),
     n_tested_cohorts=('f4_testable','sum'),n_supported_cohorts=('f4_supported','sum'),
     n_f1_available=('f1_available','sum'),n_f1_positive=('f1_positive','sum'),
@@ -107,12 +105,10 @@ genes = u.groupby(['MF_ensembl','MF']).agg(n_selected_cohorts=('cohort','size'),
     n_supported_all_four_pairs=('n_supported_all_four_pairs','sum'),
     median_cohort_support_fraction=('supported_pair_fraction','median'),
     n_supported_negative=('n_a_supported_negative','sum'),n_supported_positive=('n_a_supported_positive','sum'),
-    median_harmonic_excess=('harmonic_degree_bin_excess','median')).reset_index().merge(mr,on='MF_ensembl')
+    median_harmonic_excess=('harmonic_degree_bin_excess','median')).reset_index().merge(mr,on=['MF_ensembl','MF'],validate='one_to_one')
 genes['pooled_support_fraction'] = genes.n_supported_pairs/genes.n_tested_pairs.replace(0,np.nan)
-genes['manual17'] = genes.MF.isin(MANUAL)
-genes = genes.sort_values(['n_all_four_positive','n_supported_cohorts','n_strict_recurrent_pairs','n_supported_pairs'],ascending=False)
+genes = genes.sort_values(['n_all_four_positive','n_supported_cohorts','n_consistent_direction_pairs','n_supported_pairs'],ascending=False)
 write(genes,CANDIDATES/'all_candidate_evidence.tsv')
-write(genes[~genes.manual17],CANDIDATES/'additional_candidate_evidence.tsv')
 
 # Case-level F1 annotation is exported only for HNF1B/UCEC, ERG/PRAD, RUNX1/THCA.
 binding = read(PIPELINE / 'cpg_binding_annotations/target_cpg_hits.tsv.gz')
@@ -121,4 +117,4 @@ binding = binding[['cohort']+K+['track','cpg_passed_filters','binding_hit']]
 pairs = pairs.merge(binding,on=['cohort']+K,how='left')
 pairs = pairs.merge(u[['MF_ensembl','cohort','n_samples','f1_available','f1_positive','f2_positive','f3_member_significant_min3_term','all_four_positive']],on=['MF_ensembl','cohort'])
 write(pairs,DIRECTIONS/'all_pair_cohort_evidence.tsv.gz')
-print(f'Prepared {len(rec):,} distinct pairs and {len(genes[~genes.manual17])} additional MFs.',flush=True)
+print(f'Prepared {len(rec):,} distinct pairs and evidence for {len(genes)} MFs.',flush=True)

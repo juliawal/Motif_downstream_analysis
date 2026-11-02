@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Compare fixed literature gene lists with the saved Motif union evaluations."""
 from pathlib import Path
-import json
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -130,7 +129,6 @@ def counts(data):
 
 def main():
     union = pd.read_csv(RESULTS / 'combined_evidence/union_evidence_contexts.tsv', sep='\t')
-    historical_manual = json.loads((ROOT / 'scripts/paper_cohorts_and_genes.json').read_text())['manual17']
     shortlist = pd.read_csv(RESULTS / 'additional_candidates/candidate_shortlist.tsv', sep='\t')
     rows = [(paper, gene, cohort) for paper, cohorts in PAPER_GENES.items()
             for cohort, genes in cohorts.items() for gene in genes.split()]
@@ -141,10 +139,6 @@ def main():
     papers['motif_cohorts'] = papers.gene.map(selected).fillna('')
     papers['same_cohorts'] = [joined(set(p.split(';')) & set(m.split(';')))
                               for p, m in zip(papers.paper_cohorts, papers.motif_cohorts)]
-    papers['manual17'] = papers.gene.isin(historical_manual)
-    panel = pd.read_csv(RESULTS / 'manual_candidates/manual_panel_membership.tsv', sep='\t')
-    papers['manually_prioritised'] = papers.gene.isin(panel.MF)
-    papers['shortlist_group'] = papers.gene.map(shortlist.set_index('MF').display_group).fillna('')
 
     shared = union[union.MF.isin(papers.gene)].copy().sort_values(['MF', 'cohort'])
     for metric in ['harmonic', 'pagerank']:
@@ -192,7 +186,7 @@ def main():
                 row[f'{metric}_excess_pct_max'] = group[f'{metric}_relative_excess_pct'].max()
             genes.append(row)
 
-    short = shortlist[['MF', 'display_group', 'n_strict_recurrent_pairs',
+    short = shortlist[['MF', 'n_consistent_direction_pairs',
                        'n_supported_negative', 'n_supported_positive']].copy()
     short['motif_cohorts'] = short.MF.map(selected)
     for paper in PAPER_GENES:

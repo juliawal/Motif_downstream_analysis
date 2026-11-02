@@ -10,7 +10,7 @@ import sys
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'utils'))
-os.environ.setdefault('MPLCONFIGDIR', '/tmp/motif_26_figure_mpl')
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 
 import matplotlib
 matplotlib.use('Agg')

@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""Render TP63/CELSR3 from the two manuscript data tables; no pipeline inputs."""
+"""Render TP63/CELSR3 directions using the shared classification of tested pairs."""
 from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
 import argparse
 import os
-import tempfile
 
-os.environ.setdefault('MPLCONFIGDIR', str(Path(tempfile.gettempdir()) / 'motif_f4_figure_mpl'))
+os.environ.setdefault('MPLCONFIGDIR', str(Path(__file__).resolve().parents[2] / '.cache/matplotlib'))
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -16,6 +15,7 @@ from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
 from figure_typography import readable_text
+from project_layout import figure_data_dir
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -24,6 +24,7 @@ def draw_figure(tp, cel, output_dir):
     BLUE = '#0072B2'
     ORANGE = '#D55E00'
     GREY = '#8F9BA4'
+    PURPLE = '#8E5BA4'
     DARK = '#24313C'
     MID = '#60717D'
     GRID = '#E5EAF0'
@@ -41,9 +42,15 @@ def draw_figure(tp, cel, output_dir):
     fig.text(.025, .97, 'A  TP63 in CESC and ESCA', fontsize=9, weight='bold', va='top')
     fig.text(.63, .97, 'B  CELSR3–cg22702772', fontsize=9, weight='bold', va='top')
     ax = fig.add_axes([.13, .22, .43, .65])
-    # Mix drawing order without moving points, so no support class is always on top.
+    # Mix drawing order without moving points, so no direction class is always on top.
     draw = tp.iloc[np.random.default_rng(42).permutation(len(tp))]
-    colours = draw.support_count.map({0: GREY, 1: ORANGE, 2: BLUE})
+    categories = [('negative', BLUE, 'Negative throughout'),
+                  ('positive', ORANGE, 'Positive throughout'),
+                  ('mixed', PURPLE, 'Mixed signs'), ('zero', GREY, 'Zero without both signs')]
+    colour_by_direction = {key: colour for key, colour, _ in categories}
+    colours = draw.direction_all_tested.map(colour_by_direction)
+    if colours.isna().any() or not cel.direction_all_tested.isin(colour_by_direction).all():
+        raise ValueError('Missing direction classification for a plotted pair.')
     def darker(colour):
         return tuple(channel * .68 for channel in mpl.colors.to_rgb(colour))
 
@@ -61,11 +68,10 @@ def draw_figure(tp, cel, output_dir):
     handles = [Line2D([], [], marker='o', linestyle='none', color=col,
                       markeredgecolor=darker(col), markeredgewidth=.35, markersize=4,
                       label=f'{label} (n={count})')
-               for col, label, count in [(BLUE, 'Both cohorts', int(tp.support_count.eq(2).sum())),
-                                         (ORANGE, 'One cohort only', int(tp.support_count.eq(1).sum())),
-                                         (GREY, 'Neither cohort', int(tp.support_count.eq(0).sum()))]]
+               for key, col, label in categories
+               if (count := int(tp.direction_all_tested.eq(key).sum()))]
     ax.legend(handles=handles, loc='upper left', frameon=False,
-              title='F4 support in:', title_fontsize=6.9,
+              title='Direction across tested cohorts:', title_fontsize=6.9,
               borderaxespad=.3, handletextpad=.45, handlelength=.9, labelspacing=.35)
     bx = fig.add_axes([.77, .22, .20, .65])
     cohort_labels = ['Bladder\n(BLCA)', 'Breast\n(BRCA)', 'Head and neck\n(HNSC)',
@@ -73,7 +79,7 @@ def draw_figure(tp, cel, output_dir):
     for i, row in cel.iterrows():
         y = 4 - i
         bx.plot([0, row.a_min], [y, y], color='#CED6DD', lw=1)
-        bx.scatter([row.a_min], [y], s=28, color=BLUE, zorder=3)
+        bx.scatter([row.a_min], [y], s=28, color=colour_by_direction[row.direction_all_tested], zorder=3)
         bx.text(row.a_min + .027, y, f'+{row.a_min:.3f}', va='center', fontsize=7.1)
     bx.set_yticks(range(5), cohort_labels[::-1])
     bx.set_ylim(-.65, 4.65)
@@ -99,7 +105,16 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     tp = pd.read_csv(args.data_dir / 'tp63_cpg_recurrence.tsv', sep='\t')
     cel = pd.read_csv(args.data_dir / 'celsr3_cpg_recurrence.tsv', sep='\t')
+    directions = pd.read_csv(args.data_dir / 'all_repeated_pairs.tsv', sep='\t',
+                             usecols=['MF_ensembl', 'CpG', 'direction_all_tested'])
+    tp = tp.merge(directions, on=['MF_ensembl', 'CpG'], how='left', validate='one_to_one')
+    cel = cel.merge(directions, on=['MF_ensembl', 'CpG'], how='left', validate='many_to_one')
     draw_figure(tp, cel, output_dir)
+    plotted = figure_data_dir(output_dir)
+    tp[['MF_ensembl', 'CpG', 'a_CESC', 'a_ESCA', 'direction_all_tested']].to_csv(
+        plotted / 'tp63_pair_directions.tsv', sep='\t', index=False)
+    cel[['MF_ensembl', 'CpG', 'cohort', 'a_min', 'direction_all_tested']].to_csv(
+        plotted / 'celsr3_pair_directions.tsv', sep='\t', index=False)
     print('Finished CpG recurrence figure.')
 
 

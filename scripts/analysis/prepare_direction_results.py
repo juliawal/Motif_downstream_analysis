@@ -21,6 +21,19 @@ EXAMPLE_PAIRS = [
 DIRECTIONS = ['negative', 'positive', 'mixed', 'zero']
 
 
+def classify_pair_directions(pairs):
+    """Classify signs across all tested cohorts; F4 support is not an input."""
+    tested, negative, positive = pairs.n_tested_cohorts, pairs.n_negative, pairs.n_positive
+    if (tested.lt(0) | negative.lt(0) | positive.lt(0) | (negative + positive).gt(tested)).any():
+        raise ValueError('Invalid counts of tested cohorts or coefficient signs.')
+    return pd.Series(np.select([
+        tested.lt(2),
+        negative.eq(tested),
+        positive.eq(tested),
+        negative.gt(0) & positive.gt(0),
+    ], ['not_repeated', 'negative', 'positive', 'mixed'], default='zero'), index=pairs.index)
+
+
 def prepare_direction_results(input_dir, output_dir):
     """Count every repeated exact pair once; retain all its tested cohorts."""
     input_dir, output_dir = Path(input_dir), Path(output_dir)
@@ -37,14 +50,13 @@ def prepare_direction_results(input_dir, output_dir):
     if (signed.gt(repeated.n_tested_cohorts) | repeated.n_negative.lt(0)
             | repeated.n_positive.lt(0)).any():
         raise ValueError('Invalid counts of coefficient signs.')
-    # A zero is not a positive or negative sign. Mixed means both nonzero signs
-    # occur, even if a further tested cohort has a zero coefficient.
-    repeated['direction_all_tested'] = np.select([
-        repeated.n_negative.eq(repeated.n_tested_cohorts),
-        repeated.n_positive.eq(repeated.n_tested_cohorts),
-        repeated.n_negative.gt(0) & repeated.n_positive.gt(0),
-    ], DIRECTIONS[:3], default='zero')
-    repeated['same_sign_all_tested'] = repeated.direction_all_tested.isin(DIRECTIONS[:2])
+    # Use the common classification from prepare_pair_evidence.py for both
+    # the overview figure and the candidate/reference tables.
+    if not repeated.direction_all_tested.isin(DIRECTIONS).all():
+        raise ValueError('Invalid direction classification for a repeated pair.')
+    if not repeated.same_sign_all_tested.eq(
+            repeated.direction_all_tested.isin(DIRECTIONS[:2])).all():
+        raise ValueError('Direction labels and consistency flags disagree.')
     counts = (repeated.groupby('direction_all_tested').size()
               .reindex(DIRECTIONS, fill_value=0).rename('n_pairs')
               .rename_axis('direction').reset_index())

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Render the two retained stability supplements from saved results.
+"""Render setting overlap and seed-split stability from saved results.
 
-Run build_manual_candidate_figures.py for the retained 17-gene cohort-detail figure.
 No models, hypothesis tests or multiple-testing corrections are rerun.
 """
 from __future__ import annotations
@@ -64,15 +63,15 @@ def stability_grid(evidence):
     ax.set_yticks(np.arange(-.5, len(names)), minor=True)
     ax.grid(which="minor", color="white", lw=.5)
     ax.tick_params(which="minor", length=0)
-    tags = {(r.configuration_name, r.k_edges): r.paper_label for r in selected.itertuples()}
+    setting_labels = {(r.configuration_name, r.k_edges): r.paper_label for r in selected.itertuples()}
     for i, name in enumerate(names):
         for j, cut in enumerate(cuts):
             value = values.loc[name, cut]
-            tag = tags.get((name, cut))
-            ax.text(j, i, f"{value:.3f}" + (f"  {tag}" if tag else ""),
-                    va="center", ha="center", fontsize=6.8, weight="bold" if tag else "normal",
+            setting_label = setting_labels.get((name, cut))
+            ax.text(j, i, f"{value:.3f}" + (f"  {setting_label}" if setting_label else ""),
+                    va="center", ha="center", fontsize=6.8, weight="bold" if setting_label else "normal",
                     color=cell_text_color(cmap(norm(value))))
-            if tag:
+            if setting_label:
                 ax.add_patch(Rectangle((j-.47, i-.43), .94, .86, fill=False, ec="#18252B", lw=1.2))
     fig.colorbar(im, ax=ax, fraction=.04, pad=.025, shrink=.7).set_label(
         "Median of cohort mean Kuncheva indices", fontsize=7)
