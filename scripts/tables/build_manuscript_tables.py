@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export table data and index the seven supplement files plus one archive file.
+"""Prepare manuscript data and index the accompanying overlap files.
 
 Reads saved analyses, preserving their values and full columns. The manuscript table rows are rendered separately by scripts/build_tables.py.
 """
@@ -20,7 +20,6 @@ def ordered(frame, keys):
     frame["_arm"] = frame.analysis.map({a: i for i, a in enumerate(ARMS)}) if "analysis" in frame else 0
     frame["_case"] = frame.MF.map(CASE_ORDER).fillna(99) if "MF" in frame else 0
     return frame.sort_values(keys, kind="stable").drop(columns=["_arm", "_case"])
-
 
 
 def build(analysis, output):
@@ -44,22 +43,18 @@ def build(analysis, output):
     erg = ordered(read("associations/erg_tdrd1_binding.tsv"), ["_arm", "G_prime_distance_bp", "CpG"])
     cases = ordered(read("associations/case_association_summary.tsv"), ["_case", "cohort", "_arm"])
     criteria = ordered(read("combined_evidence/case_evaluation_criteria.tsv"), ["_case", "cohort", "_arm"])
-    binding = read("associations/binding_case_summary.tsv")
-    hnf_binding = ordered(binding[binding.MF.eq("HNF1B") & binding.cohort.eq("UCEC") &
-                                  binding.population.isin(["tested", "supported"])], ["_arm", "population"])
-    hnf_binding["_population"] = hnf_binding.population.map({"tested": 0, "supported": 1})
-    hnf_binding = ordered(hnf_binding, ["_arm", "_population"]).drop(columns="_population")
-    context = read("associations/binding_context_sensitivity.tsv")
-    hnf_context = context[context.MF.eq("HNF1B") & context.cohort.eq("UCEC")].copy()
     for df, filename in [(coverage, "union_evaluation_coverage.tsv"), (f4, "association_coverage.tsv"),
                          (cross, "combined_positive_contexts.tsv"),
                          (erg, "erg_tdrd1_triplets.tsv"), (cases, "case_association_table.tsv"),
-                         (criteria, "case_criteria_table.tsv"),
-                         (hnf_binding, "hnf1b_binding_directions.tsv"),
-                         (hnf_context, "hnf1b_genomic_context_sensitivity.tsv")]:
+                         (criteria, "case_criteria_table.tsv")]:
         save(df, filename)
 
-    # Retain analysis copies of the overlaps; the index records their publication location.
+    # Keep the saved TCL1A case table independently of the retired case figure.
+    tcl = pd.read_csv(table_data / "case_association_table.tsv", sep="\t", low_memory=False)
+    tcl = tcl.query("MF == 'TCL1A' and cohort == 'TGCT'").set_index("analysis").reindex(ARMS)
+    save(tcl.reset_index(), "tcl1a_associations.tsv")
+
+    # Record filenames relative to this output directory.
     # Copy original bytes so leading-zero state patterns and compressed records
     # survive unchanged; this step performs no overlap analysis or new testing.
     overlap_specs = [
@@ -67,7 +62,7 @@ def build(analysis, output):
         ("B", "all_four_pair_patterns_by_context.tsv", "All four-analysis patterns by MF and cohort"),
         ("C", "all_four_pair_patterns_global.tsv", "All four-analysis patterns pooled across contexts"),
         ("D", "union_gene_recurrence.tsv", "Shared tested and supported pairs by MF"),
-        ("E", "union_same_cpg_recurrence.tsv.gz", "Exact pair recurrence across cohorts in the union (reproduction archive)"),
+        ("E", "union_same_cpg_recurrence.tsv.gz", "Exact pair recurrence across cohorts in the union"),
         ("F", "union_pairwise_cohort_recurrence.tsv", "Pairwise cohort overlaps and coefficient directions"),
         ("G", "union_gene_recurrence.tsv", "Union gene recurrence and exact-pair summaries"),
         ("H", "gene_recurrence.tsv", "Gene recurrence for each setting and the union"),
@@ -93,14 +88,14 @@ def build(analysis, output):
             copied[name] = (len(pd.read_csv(target, sep="\t", usecols=[0])),
                             hashlib.sha256(target.read_bytes()).hexdigest())
         rows, checksum = copied[name]
-        record = {"key": key, "file": "diagnostics/" + name if key == "E" else name,
-                  "location": "reproduction_archive" if key == "E" else "supplement",
+        record = {"key": key, "file": name,
+                  "location": "analysis_results",
                   "description": description,
                   "rows": rows, "sha256": checksum, "analysis_source": relative,
                   "columns": ";".join(robustness_columns) if key == "D" else "*"}
         overlap_records.append(record)
     pd.DataFrame(overlap_records).to_csv(output / "overlap_index.tsv", sep="\t", index=False)
-    print(f"Wrote eight manuscript data tables and an index of {len(copied)} overlap files to {output}")
+    print(f"Wrote six manuscript data tables and an index of {len(copied)} overlap files to {output}")
 
 
 if __name__ == "__main__":

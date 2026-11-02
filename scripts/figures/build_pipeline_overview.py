@@ -16,7 +16,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
-import project_layout as artifacts
 
 PROJECT = Path(__file__).resolve().parents[2]
 OUTPUT = PROJECT / "figures/main/pipeline_overview.pdf"
@@ -45,8 +44,6 @@ EVALUATIONS = [
 
 def render_overview(output: Path = OUTPUT) -> None:
     """Write a vector PDF without reading an existing figure or requiring LaTeX."""
-    if not artifacts.FIGURES:
-        return
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     style = {
@@ -114,11 +111,7 @@ def render_overview(output: Path = OUTPUT) -> None:
         box(left, 247.966, width, row_height,
             "G: Summarise evaluation results", "#74669A", "#F6F4F9")
         try:
-            artifacts.save_figure(fig, output, facecolor="white", metadata={
-                "Title": "Motif pipeline overview",
-                "CreationDate": None,
-                "ModDate": None,
-            })
+            fig.savefig(output, facecolor='white', metadata={'Title': 'Motif pipeline overview', 'CreationDate': None, 'ModDate': None})
         finally:
             plt.close(fig)
 
@@ -128,8 +121,7 @@ def main():
     parser.add_argument("--output", type=Path, default=OUTPUT)
     args = parser.parse_args()
     render_overview(args.output)
-    if artifacts.FIGURES:
-        print(f"Wrote {args.output}")
+    print(f"Wrote {args.output}")
 
 
 if __name__ == "__main__":

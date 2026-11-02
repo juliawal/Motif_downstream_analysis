@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Candidate coverage and descriptive sign baselines from the prepared pair results.
+"""Candidate coverage and effect-size diagnostics from the prepared pair results.
 
 No new patient-level tests. Screening cutoffs are exploratory coverage rules,
 not significance thresholds or validated candidate scores.
@@ -7,7 +7,6 @@ not significance thresholds or validated candidate scores.
 import argparse
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 ROOT=Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
@@ -18,21 +17,8 @@ CANDIDATES=args.analysis_dir/'additional_candidates'
 read=lambda p:pd.read_csv(p,sep='\t',low_memory=False)
 write=lambda d,p:d.to_csv(p,sep='\t',index=False,na_rep='NA')
 d=read(DIRECTIONS/'all_pair_cohort_evidence.tsv.gz')
-old=read(DIRECTIONS/'all_exact_pair_recurrence.tsv.gz')
-allraw=d[['cohort','MF_ensembl','MF','CpG','tested','supported','a']].copy()
-allraw[['tested','supported']]=allraw[['tested','supported']].astype(int)
-allraw['sign']=np.where(allraw.tested,np.sign(allraw.a),0).astype(int)
-t=allraw[allraw.tested.eq(1)].copy();t['positive']=t.sign.gt(0)
-repeat=old[old.n_tested_cohorts.ge(2)]
-x=t.merge(repeat[['MF_ensembl','CpG']],on=['MF_ensembl','CpG'])
-# Descriptive reference used in the manuscript: signs among repeated pairs.
-marginal=x.groupby(['MF_ensembl','cohort']).agg(p_positive=('positive','mean')).reset_index()
-z=x.merge(marginal,on=['MF_ensembl','cohort'])
-z['p_negative']=1-z.p_positive
-e=z.groupby(['MF_ensembl','CpG']).agg(MF=('MF','first'),p_all_positive=('p_positive','prod'),p_all_negative=('p_negative','prod')).reset_index()
-e['expected_same_sign']=e.p_all_positive+e.p_all_negative
-e=e.merge(repeat[['MF_ensembl','CpG','same_sign_all_tested']],on=['MF_ensembl','CpG'])
-write(e,DIRECTIONS/'sign_frequency_reference.tsv')
+t=d.loc[d.tested.eq(True), ['cohort','MF_ensembl','MF','CpG','supported','a']].copy()
+t['supported']=t.supported.astype(int)
 
 u=read(CANDIDATES/'union_context_evidence.tsv');g=read(CANDIDATES/'additional_candidate_evidence.tsv')
 u=u[~u.manual17].copy()
@@ -67,4 +53,4 @@ upstream['fraction_large_a_without_F4']=upstream.n_large_a_without_F4/upstream.n
 upstream['a_only_review_flag']=upstream.n_large_a_without_F4.ge(20)&upstream.fraction_large_a_without_F4.ge(.5)
 write(upstream[upstream.a_only_review_flag].sort_values('n_large_a_without_F4',ascending=False),CANDIDATES/'expression_methylation_review_queue.tsv')
 
-print(f'{len(repeat)} repeated pairs; {g.screen_core.sum()} core candidates; {g.screen_any.sum()} broadly screened candidates.')
+print(f'{g.screen_core.sum()} core candidates; {g.screen_any.sum()} broadly screened candidates.')

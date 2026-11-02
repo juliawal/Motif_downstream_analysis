@@ -46,6 +46,8 @@ def export_f4_branch(run_root, branch_dir, out_dir, arm, cohort, config, *, chun
     min_samples = int(config["mediation_min_samples"])
     n_pairs = len(inputs)
     pair_index = pd.MultiIndex.from_frame(inputs[KEY])
+    if not pair_index.is_unique:
+        raise ValueError(f'Duplicate MF-CpG input pairs: {input_path}')
     values = {name: np.zeros(n_pairs, dtype=np.int64) for name in COUNT_COLUMNS}
     values.update({name: np.zeros(n_pairs, dtype=float) for name in SUM_COLUMNS})
     values.update({name: np.full(n_pairs, np.nan) for name in MIN_COLUMNS + ["a_max"]})
@@ -64,6 +66,8 @@ def export_f4_branch(run_root, branch_dir, out_dir, arm, cohort, config, *, chun
             if chunk.empty:
                 continue
             indexes = pair_index.get_indexer(pd.MultiIndex.from_frame(chunk[KEY]))
+            if (indexes < 0).any():
+                raise ValueError(f'A saved triplet has no corresponding F0 input pair: {triplet_path}')
             tested = chunk.triplet_status.isin(TESTED)
             supported = chunk.mediation_supported.eq("True")
             numeric = {name: pd.to_numeric(chunk[name].replace("", np.nan)) for name in
@@ -106,6 +110,9 @@ def export_f4_branch(run_root, branch_dir, out_dir, arm, cohort, config, *, chun
 
     observed = {name: int(values[name].sum()) for name in
                 ["n_candidate_triplets", "n_tested_triplets", "n_supported_triplets"]}
+    actual_counts = dict(n_input_pairs=n_pairs, **observed)
+    if any(actual_counts[key] != expected[key] for key in actual_counts):
+        raise ValueError(f'Saved F4 summary and detail rows disagree: {summary_path}')
     testable = original["testable"] == "True"
     result = inputs.copy()
     result.insert(0, "cohort", cohort)

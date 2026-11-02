@@ -14,8 +14,6 @@ from collections import Counter
 from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-from pipeline_file_layout import PipelineFiles
 
 import numpy as np
 import pandas as pd
@@ -27,8 +25,6 @@ COUNT_COLS = ['n_input_pairs', 'n_candidate_pairs', 'n_tested_pairs', 'n_support
               'n_candidate_triplets', 'n_tested_triplets', 'n_supported_triplets',
               'n_nominal_joint_triplets', 'n_no_candidate_pairs', 'n_only_untestable_pairs',
               'n_tested_negative_pairs', 'n_untestable_triplets', 'n_negative_triplets']
-
-
 
 
 def ratio(n, d):
@@ -64,15 +60,14 @@ def main():
     parser.add_argument('--output', type=Path, default=Path(__file__).resolve().parents[2] / 'analysis_results/associations')
     args = parser.parse_args()
     root, out = args.input.resolve(), args.output.resolve()
-    files = PipelineFiles(root)
     out.mkdir(parents=True, exist_ok=True)
 
     def read(relative, **kwargs):
-        path = files.path(relative)
+        path = root / relative
         return pd.read_csv(path, sep='\t', **kwargs)
 
     def read_json(relative):
-        path = files.path(relative)
+        path = root / relative
         return json.loads(path.read_text())
 
     def save(frame, name):
@@ -93,7 +88,7 @@ def main():
         ids = ann.loc[ann.selected_gene_symbol.eq(symbol), 'ensembl_id']
         case_ids[symbol] = ids.iloc[0]
     cohort_rows, contexts = [], []
-    pairwise_rows, pattern_rows, case_frames, union_frames = [], [], [], []
+    pairwise_rows, pattern_rows, union_frames = [], [], []
     common_tested, common_support = Counter(), Counter()
 
     for cohort in cohorts:
@@ -164,8 +159,6 @@ def main():
                                               'no_candidate_triplets' if original.testable else 'cohort_below_min_samples'], default='no_input_pairs')
             contexts.append(add_fractions(ag))
             tables[arm] = z
-            take = z.MF.map(lambda mf: (mf, cohort) in CASES)
-            case_frames.append(z.loc[take].drop(columns=[c for c in z if c.startswith('a_supported') or c.startswith('a_tested') or c in ['candidate_pair','tested_pair','supported_pair']]))
             if arm == 'union':
                 union_frames.append(z[['cohort', 'MF', *KEY, 'n_candidate_triplets', 'n_tested_triplets', 'n_supported_triplets', 'a_min']].copy())
 
@@ -238,7 +231,6 @@ def main():
             row[f'n_supported_{arm}_common_tested'] = int(g.loc[common & g.supported_pattern.str[i].eq('1'), 'n_pairs'].sum())
         robustness.append(row)
     robust = pd.DataFrame(robustness)
-    casepairs = pd.concat(case_frames, ignore_index=True)
     casecontexts = md[[ (mf, cohort) in CASES for mf, cohort in zip(md.MF, md.cohort) ]]
     save(casecontexts, 'case_association_summary.tsv')
     global_rows = []
@@ -316,28 +308,9 @@ def main():
                 n_same_a_sign=int(signs_a.eq(signs_b).sum()), n_opposite_a_sign=int((signs_a * signs_b).lt(0).sum())))
     save(pd.DataFrame(recurrence_pairs), 'union_pairwise_cohort_recurrence.tsv')
 
-    # Binding records preserve unmeasured/absent status; only explicit bool true
-    # and false enter a measured hit/no-hit comparison.
+    # Retain binding annotations for the separate ERG--TDRD1 triplet table.
     binding = read('cpg_binding_annotations/target_cpg_hits.tsv.gz')
     bkeys = ['analysis', 'cohort', *KEY]
-    joined = casepairs.merge(binding.drop(columns='MF'), on=bkeys, how='left', indicator='binding_merge')
-    joined['binding_record_status'] = np.where(joined.binding_merge.eq('left_only'), 'not_exported_for_this_case', joined.f1_status.fillna('missing_status'))
-    joined = joined.drop(columns='binding_merge')
-    binding_summary = []
-    for keys, g in joined.groupby(['analysis', 'cohort', 'MF', 'MF_ensembl', 'track'], dropna=False):
-        for population, mask in [('all_input', pd.Series(True, index=g.index)), ('tested',g.n_tested_triplets.gt(0)), ('supported',g.n_supported_triplets.gt(0))]:
-            gg = g[mask]
-            hit, nohit = gg.binding_hit.eq(True), gg.binding_hit.eq(False)
-            binding_summary.append(dict(zip(['analysis','cohort','MF','MF_ensembl','track'],keys)) | dict(
-                population=population, n_pairs=len(gg), n_measured_hit=int(hit.sum()), n_measured_no_hit=int(nohit.sum()),
-                n_unmeasured=int((~hit & ~nohit).sum()), n_negative_a_hit=int(gg.loc[hit,'a_min'].lt(0).sum()),
-                n_negative_a_no_hit=int(gg.loc[nohit,'a_min'].lt(0).sum()),
-                n_a_available_hit=int(gg.loc[hit,'a_min'].notna().sum()),
-                n_a_available_no_hit=int(gg.loc[nohit,'a_min'].notna().sum()),
-                negative_a_fraction_hit=ratio(gg.loc[hit,'a_min'].lt(0).sum(),gg.loc[hit,'a_min'].notna().sum()),
-                negative_a_fraction_no_hit=ratio(gg.loc[nohit,'a_min'].lt(0).sum(),gg.loc[nohit,'a_min'].notna().sum()),
-                a_median_hit=median(gg.loc[hit,'a_min']), a_median_no_hit=median(gg.loc[nohit,'a_min'])))
-    save(pd.DataFrame(binding_summary), 'binding_case_summary.tsv')
     tss_annotation = read('reference_annotations/gene_tss_annotations_file/gene_annot.tsv.gz')
     tdrd1_strands = tss_annotation.loc[tss_annotation.gene_id.eq(case_ids['TDRD1']), 'gene_strand'].dropna().unique()
     tdrd1_strand = tdrd1_strands[0]
@@ -354,37 +327,6 @@ def main():
         e['promoter_proximal'] = e.G_prime_oriented_cpg_distance_bp.between(-1500, 199)
         erg_frames.append(e)
     save(pd.concat(erg_frames, ignore_index=True), 'erg_tdrd1_binding.tsv')
-    cpgann = read('reference_annotations/cpg_gene_annotations_file/cpg_gene_annotations.hg38.gencode.v22.tsv.gz')
-    p = joined[joined.analysis.eq('union') & joined.n_supported_triplets.gt(0) & joined.binding_hit.notna()].merge(
-        cpgann, left_on='CpG', right_on='cpg_id', how='left')
-    p['cgi'] = p.CGIposition.fillna('OpenSea'); p.loc[p.cpg_id.isna(), 'cgi'] = 'Missing'
-    p['region'] = np.where(p.distance_to_nearest_tss.ge(-1500) & p.distance_to_nearest_tss.lt(200), 'Promoter',
-                           np.where(p.genes_that_contain_cpg.notna(), 'GeneBody', 'Intergenic'))
-    p.loc[p.cpg_id.isna(), 'region'] = 'Missing'
-    p['negative'] = p.a_min.lt(0)
-    context_sensitivity, strata = [], []
-    for (cohort, mf, track), g in p.groupby(['cohort', 'MF', 'track']):
-        yes, no = g[g.binding_hit.eq(True)], g[g.binding_hit.eq(False)]
-        for name, columns in [('cgi',['cgi']), ('region',['region']), ('cgi_x_region',['cgi','region'])]:
-            cells = []
-            for key, gg in g.groupby(columns):
-                y,n = gg[gg.binding_hit.eq(True)],gg[gg.binding_hit.eq(False)]
-                key = key if isinstance(key,tuple) else (key,)
-                cells.append(dict(cohort=cohort,MF=mf,track=track,stratification=name,context='|'.join(key),
-                                  n_binding=len(y),n_no_binding=len(n),n_negative_binding=int(y.negative.sum()),n_negative_no_binding=int(n.negative.sum()),
-                                  fraction_negative_binding=y.negative.mean(),fraction_negative_no_binding=n.negative.mean(),adequate=len(y)>=10 and len(n)>=10))
-            cc = pd.DataFrame(cells); adequate = cc[cc.adequate]
-            weights = (adequate.n_binding+adequate.n_no_binding)/(adequate.n_binding+adequate.n_no_binding).sum()
-            context_sensitivity.append(dict(cohort=cohort,MF=mf,track=track,stratification=name,min_per_cell=10,
-                n_total_binding=len(yes),n_total_no_binding=len(no),raw_negative_fraction_binding=yes.negative.mean(),
-                raw_negative_fraction_no_binding=no.negative.mean(),raw_difference=yes.negative.mean()-no.negative.mean(),
-                n_common_cells=len(adequate),n_retained_binding=int(adequate.n_binding.sum()),n_retained_no_binding=int(adequate.n_no_binding.sum()),
-                retained_fraction_binding=ratio(adequate.n_binding.sum(),len(yes)),retained_fraction_no_binding=ratio(adequate.n_no_binding.sum(),len(no)),
-                standardized_difference=float(((adequate.fraction_negative_binding-adequate.fraction_negative_no_binding)*weights).sum()) if len(adequate) else np.nan,
-                comparison_status='computed' if len(adequate) and len(yes)>=10 and len(no)>=10 else 'insufficient_common_context'))
-            strata.extend(cells)
-    save(pd.DataFrame(context_sensitivity), 'binding_context_sensitivity.tsv')
-    save(pd.DataFrame(strata), 'binding_context_strata.tsv')
     tp, cel = cpg_figure_data(root / "f4_methylation_factor_cpg_pairs")
     save(tp, "tp63_cpg_recurrence.tsv")
     save(cel, "celsr3_cpg_recurrence.tsv")

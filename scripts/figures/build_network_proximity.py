@@ -14,7 +14,6 @@ from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-import project_layout as artifacts
 from project_layout import figure_data_dir
 import argparse
 import os
@@ -43,7 +42,7 @@ plt.rcParams.update({'font.family':'DejaVu Sans','font.size':7,'axes.titlesize':
 def save(fig,stem,output_dir):
     # Explicit physical dimensions match the final manuscript text width.
     readable_text(fig)
-    artifacts.save_figure(fig, output_dir/f'{stem}.pdf',dpi=300)
+    fig.savefig(output_dir / f'{stem}.pdf', dpi=300)
     plt.close(fig)
 
 def title(fig,x,y,letter,text,fs=8,va='top'):
@@ -135,10 +134,9 @@ def main():
     ax.spines['left'].set_visible(False)
     fig.legend(handles=[Patch(color=c,label=g) for g,c in zip(genes+['Others'],colors)],loc='lower left',bbox_to_anchor=(.175,.012),ncol=5,frameon=False,fontsize=6.2,handlelength=.9,columnspacing=1.05)
     save(fig,'network_proximity',OUT)
-    artifacts.write_dataframe(pd.DataFrame(bar_rows), DATA/'prad_network_contribution_shares.tsv',sep='\t',index=False)
+    pd.DataFrame(bar_rows).to_csv(DATA / 'prad_network_contribution_shares.tsv', sep='\t', index=False)
 
     print('Finished figure and data export.')
-
 
 
 if __name__=='__main__':

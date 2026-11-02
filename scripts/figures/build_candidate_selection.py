@@ -7,7 +7,6 @@ from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-import project_layout as artifacts
 from project_layout import figure_data_dir
 import os
 
@@ -89,8 +88,8 @@ patterns = pd.DataFrame(pattern_rows).set_index("cohort")
 
 for name, df in [("cohort_setting_agreement", summary), ("cohort_union_recurrence", recurrence),
                  ("exact_setting_memberships", patterns)]:
-    artifacts.write_dataframe(df, DATA / f"{name}.tsv", sep="\t")
-artifacts.write_dataframe(details, DATA / "union_candidate_details.tsv", sep="\t", index=False)
+    df.to_csv(DATA / f'{name}.tsv', sep='\t')
+details.to_csv(DATA / 'union_candidate_details.tsv', sep='\t', index=False)
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans", "font.size": 8,
@@ -170,6 +169,6 @@ for label in centered_labels:
                                -(bounds.y0 + bounds.y1) / 144, fig.dpi_scale_trans)
     label.set(ha="left", va="baseline")
     label.set_transform(label.get_transform() + offset)
-artifacts.save_figure(fig, OUT / "candidate_selection_and_recurrence.pdf")
+fig.savefig(OUT / 'candidate_selection_and_recurrence.pdf')
 plt.close(fig)
 

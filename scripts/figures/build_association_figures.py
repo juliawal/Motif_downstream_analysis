@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the overview, separate F4/combined-evidence figures and ERG/TCL1A.
+"""Render the overview, F4 coverage and combined-evidence figures.
 
 No models, hypothesis tests, or multiplicity corrections are recomputed here.
 The saved figure-data tables specify every display.
@@ -12,8 +12,7 @@ from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-import project_layout as artifacts
-from project_layout import figure_data_dir, figure_output_dir
+from project_layout import figure_data_dir
 import tempfile
 
 os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "motif_v22_figure_mpl"))
@@ -43,40 +42,18 @@ def read(path, **kwargs):
 
 
 def data(frame, name):
-    artifacts.write_dataframe(frame, figure_data_dir(OUT) / f"{name}.tsv", sep="\t", index=False)
+    frame.to_csv(figure_data_dir(OUT) / f'{name}.tsv', sep='\t', index=False)
 
 
 def save(fig, name):
-    if name in {"association_coverage", "combined_evidence", "erg_and_tcl1a_associations"}:
+    if name in {"association_coverage", "combined_evidence"}:
         readable_text(fig)
-    artifacts.save_figure(fig, figure_output_dir(OUT, name) / f"{name}.pdf", dpi=300, facecolor="white")
+    fig.savefig(OUT / f'{name}.pdf', dpi=300, facecolor='white')
     plt.close(fig)
-
-
-def figure(height):
-    return plt.figure(figsize=(150 / 25.4, height / 25.4), layout="constrained")
 
 
 def title(ax, label):
     ax.set_title(label, loc="left", fontsize=8.2, fontweight="bold", pad=10)
-
-
-def clean(ax):
-    ax.spines[["top", "right", "left"]].set_visible(False)
-    ax.tick_params(axis="y", length=0)
-    ax.grid(axis="x", color=LIGHT, lw=.5, zorder=0)
-
-
-def limits(values, *, zero=True, pad=.15):
-    x = np.asarray(values, dtype=float)
-    x = x[np.isfinite(x)]
-    if zero:
-        x = np.append(x, 0.)
-    if not len(x):
-        return (-1, 1)
-    low, high = float(x.min()), float(x.max())
-    span = high - low if high > low else max(abs(high), 1.)
-    return low - span * pad, high + span * pad
 
 
 def cohort_label(value):
@@ -89,14 +66,6 @@ def yes(value):
     if isinstance(value, str):
         return {"true": True, "false": False, "1": True, "0": False}.get(value.lower())
     return bool(value)
-
-
-def pct(numerator, denominator):
-    return f"{100 * numerator / denominator:.2f}%" if denominator else "NA"
-
-
-def method_overview():
-    render_overview(OUT / "pipeline_overview.pdf")
 
 
 def coverage_label(ax, x, y, label, **kwargs):
@@ -140,66 +109,14 @@ def main_coverage(f4dir, integration):
 
     fig, bottom = plt.subplots(figsize=(156/25.4, 51/25.4), layout="constrained")
     bottom.axis("off"); bottom.set(xlim=(0, 1), ylim=(-.3, 1.5))
-    title(bottom, "Evidence overlap by MF–cohort combination")
+    title(bottom, "Evaluation overlap by MF–cohort combination")
     available = int(cross.all_four_available.map(yes).sum()); positive = int(cross.all_four_positive.map(yes).sum())
     for y, count, total, label in [(1, available, len(cross), "Assessed by all four evaluations"), (.2, positive, available, "Meeting all four criteria")]:
         bottom.text(0, y+.27, label, fontsize=8.5, va="center")
         bottom.add_patch(Rectangle((0, y-.07), .76, .19, facecolor=LIGHT))
         bottom.add_patch(Rectangle((0, y-.07), .76*count/total if total else 0, .19, facecolor=BLUE))
-        bottom.text(.79, y+.025, f"{count:,}/{total:,}", fontsize=9, va="center", fontweight="bold")
+        bottom.text(.79, y+.025, f"{count}/{total}", fontsize=9, va="center", fontweight="bold")
     save(fig, "combined_evidence")
-
-
-def main_cases(f4dir):
-    all_erg = read(f4dir / "erg_tdrd1_triplets.tsv")
-    erg = all_erg.query("analysis == 'union'").sort_values(["G_prime_distance_bp", "CpG"]).reset_index(drop=True)
-    cases = read(f4dir / "case_association_table.tsv")
-    tcl = cases.query("MF == 'TCL1A' and cohort == 'TGCT'").set_index("analysis").reindex(ARMS)
-    data(tcl.reset_index(), "tcl1a_associations")
-    fig = figure(145); outer = fig.add_gridspec(2, 1, height_ratios=[.68, .32], hspace=.2)
-    top = outer[0].subgridspec(1, 5, width_ratios=[.23, .27, .27, .11, .12], wspace=.06)
-    axes = [fig.add_subplot(top[i]) for i in range(5)]
-    count = max(len(erg), 1)
-    for ax in axes:
-        ax.set_ylim(count-.35, -1.1)
-        for i in range(0, count, 2): ax.axhspan(i-.5, i+.5, color="#F5F7F9", lw=0)
-    for ax in [axes[0], axes[3], axes[4]]: ax.set_xlim(0,1); ax.axis("off")
-    patients = sorted(set(erg.n_samples.dropna().astype(int)))
-    n_label = str(patients[0]) if len(patients)==1 else "variable per triplet" if patients else "NA"
-    axes[0].set_title(f"A  ERG–CpG–TDRD1 in PRAD (n = {n_label})", loc="left", fontsize=8.1, fontweight="bold", pad=29)
-    axes[0].text(0, -.8, "CpG", fontsize=7, color=GRAY)
-    axes[3].set_title("F4\nsupport", fontsize=7, pad=10); axes[4].set_title("Binding\noverlap", fontsize=7, pad=10)
-    if not len(erg): axes[0].text(0, 0, "No current case triplets", fontsize=7)
-    for i, row in erg.iterrows():
-        axes[0].text(0, i, row.CpG, fontsize=7, va="center")
-        tested = row.triplet_status in {"significant", "not_significant"}
-        supported, hit = yes(row.mediation_supported), yes(row.binding_hit)
-        axes[3].text(.5, i, "Yes" if supported else "No" if tested else "NT", ha="center", va="center", fontsize=7, color=BLUE if supported else GRAY)
-        axes[4].text(.5, i, "NA" if hit is None else "Yes" if hit else "No", ha="center", va="center", fontsize=7, color=BLUE if hit else GRAY)
-    coef_limit = limits(erg[["a_estimate", "b_estimate"]].to_numpy().ravel(), pad=.24) if len(erg) else (-1,1)
-    for ax, field, label in [(axes[1], "a_estimate", "a: ERG–methylation"), (axes[2], "b_estimate", "b: methylation–TDRD1")]:
-        ax.axvline(0, color=GRAY, lw=.65, ls="--")
-        for i, row in erg.iterrows():
-            value = row[field]
-            if pd.isna(value): ax.text(0, i, "NA", fontsize=7); continue
-            supported = yes(row.mediation_supported)
-            ax.plot([0,value],[i,i], color="#AEBFC9", lw=.8)
-            ax.scatter(value, i, s=23, facecolor=BLUE if supported else "white", edgecolor=BLUE if supported else GRAY, zorder=3)
-            ax.annotate(f"{value:.3f}", (value,i), xytext=(0,7), textcoords="offset points", ha="center", fontsize=6.1, color=GRAY)
-        ax.set(xlim=coef_limit, yticks=[], xlabel="Coefficient"); ax.set_title(label.replace("–", "–\n", 1), fontsize=8, pad=10); clean(ax)
-    b = fig.add_subplot(outer[1]); b.axis("off")
-    title(b, "B  TCL1A–CpG pairs in TGCT")
-    rows = [[label, f"{int(row.n_tested_pairs):,}", f"{int(row.n_supported_pairs):,}",
-             pct(row.n_supported_pairs, row.n_tested_pairs)]
-            for label, row in zip(LABELS, tcl.itertuples())]
-    table = b.table(cellText=rows, colLabels=["Analysis", "Tested", "Supported", "Supported / tested"],
-                    cellLoc="center", colWidths=[.17,.23,.23,.37], bbox=[0,.06,1,.86])
-    table.auto_set_font_size(False); table.set_fontsize(8)
-    for (row, col), cell in table.get_celld().items():
-        cell.set_edgecolor("white")
-        cell.set_facecolor(LIGHT if row == 0 else "#F5F7F9" if row % 2 else "white")
-        if row == 0: cell.set_text_props(weight="bold")
-    save(fig,"erg_and_tcl1a_associations")
 
 
 def main():
@@ -215,10 +132,9 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True);figure_data_dir(OUT)
     plt.rcParams.update({"font.family":"DejaVu Sans","font.size":7.2,"axes.labelsize":7,"axes.titlesize":8.2,"xtick.labelsize":6.5,"ytick.labelsize":7,"text.color":INK,"axes.labelcolor":INK,"axes.edgecolor":GRAY,"axes.linewidth":.5,"pdf.fonttype":42,"figure.constrained_layout.w_pad":.04,"figure.constrained_layout.h_pad":.04})
     f4dir = integration = WORK
-    method_overview()
+    render_overview(OUT / "pipeline_overview.pdf")
     main_coverage(f4dir, integration)
-    main_cases(f4dir)
-    print(f"Wrote the overview, F4 coverage, combined evidence and ERG/TCL1A figures to {OUT}")
+    print(f"Wrote the overview, F4 coverage and combined evidence figures to {OUT}")
 
 
 if __name__ == "__main__":

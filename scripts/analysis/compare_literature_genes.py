@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compare fixed literature gene lists with the saved Motif union evaluations."""
 from pathlib import Path
+import json
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -129,7 +130,7 @@ def counts(data):
 
 def main():
     union = pd.read_csv(RESULTS / 'combined_evidence/union_evidence_contexts.tsv', sep='\t')
-    manual = pd.read_csv(RESULTS / 'manual_candidates/manual_binding_measurements.tsv', sep='\t')
+    historical_manual = json.loads((ROOT / 'scripts/paper_cohorts_and_genes.json').read_text())['manual17']
     shortlist = pd.read_csv(RESULTS / 'additional_candidates/candidate_shortlist.tsv', sep='\t')
     rows = [(paper, gene, cohort) for paper, cohorts in PAPER_GENES.items()
             for cohort, genes in cohorts.items() for gene in genes.split()]
@@ -140,7 +141,9 @@ def main():
     papers['motif_cohorts'] = papers.gene.map(selected).fillna('')
     papers['same_cohorts'] = [joined(set(p.split(';')) & set(m.split(';')))
                               for p, m in zip(papers.paper_cohorts, papers.motif_cohorts)]
-    papers['manual17'] = papers.gene.isin(manual.MF)
+    papers['manual17'] = papers.gene.isin(historical_manual)
+    panel = pd.read_csv(RESULTS / 'manual_candidates/manual_panel_membership.tsv', sep='\t')
+    papers['manually_prioritised'] = papers.gene.isin(panel.MF)
     papers['shortlist_group'] = papers.gene.map(shortlist.set_index('MF').display_group).fillna('')
 
     shared = union[union.MF.isin(papers.gene)].copy().sort_values(['MF', 'cohort'])

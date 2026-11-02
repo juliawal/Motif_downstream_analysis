@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
-"""Reproduce the approved F3 manuscript figure from saved enrichment results.
+"""Render the F3 manuscript figure from the prepared enrichment tables.
 
 Run in the Motif environment:
     python scripts/figures/build_functional_enrichment.py
 
-Reads analysis_results/enriched_terms.tsv and
-writes functional_enrichment.pdf to figures/main/. The complete
-110 term rows, category mapping, cohort ranking, category summaries, gene
-memberships are written to analysis_results/.
+Reads the term table, cohort ranking and category summary in analysis_results/.
+Writes functional_enrichment.pdf and the plotted gene memberships.
 
-Use --evidence-dir and --output-dir for alternative locations. This standalone
-generator needs no files from On_the_go and does not alter the manuscript or
-appendix. Saved tests and memberships are retained; no new inference is run.
+Use --evidence-dir and --output-dir for alternative locations.
+Saved tests and memberships are retained; no new inference is run.
 """
 from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-import project_layout as artifacts
 from project_layout import figure_data_dir
 import argparse
 import os
@@ -31,7 +27,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Patch
 
 from figure_typography import readable_text
-from enrichment_data import CATEGORIES, ROOT, prepare, short_cohort
+from enrichment_data import CATEGORIES, ROOT, short_cohort
 
 INK = '#243746'
 GREY = '#7A8791'
@@ -110,7 +106,7 @@ def figure(terms, rank, summary, output_dir):
     handles.append(Patch(color='#E8EDF0',label='B–C: not annotated in this term'))
     fig.legend(handles=handles,loc='lower left',bbox_to_anchor=(.025,.003),ncol=2,frameon=False,fontsize=6.1,handlelength=.9,columnspacing=1.3)
     readable_text(fig)
-    artifacts.save_figure(fig, output_dir/'functional_enrichment.pdf',dpi=300)
+    fig.savefig(output_dir / 'functional_enrichment.pdf', dpi=300)
     plt.close(fig)
     membership = pd.DataFrame(membership)
     return membership
@@ -119,29 +115,21 @@ def figure(terms, rank, summary, output_dir):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--evidence-dir', type=Path, default=ROOT / 'analysis_results',
-                        help='Directory containing enriched_terms.tsv')
+                        help='Directory containing the prepared enrichment term, ranking and summary tables')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'figures/main',
                         help='Directory for PDF; accompanying tables use analysis_results/ for project outputs, otherwise data/')
     args = parser.parse_args()
-    source = args.evidence_dir.resolve() / 'enriched_terms.tsv'
-    terms, rank, summary, mapping, excluded = prepare(source)
+    source = args.evidence_dir.resolve()
+    terms, rank, summary = [
+        pd.read_csv(source / f'{name}.tsv', sep='\t', float_precision='round_trip')
+        for name in ['union_enrichment_terms', 'enrichment_cohort_ranking', 'enrichment_category_summary']
+    ]
     output_dir = args.output_dir.resolve()
     data_dir = figure_data_dir(output_dir)
     data_dir.mkdir(parents=True, exist_ok=True)
     membership = figure(terms, rank, summary, output_dir)
-    exports = [
-        ('enrichment_cohort_ranking', rank),
-        ('enrichment_category_summary', summary),
-        ('enrichment_gene_memberships', membership),
-    ]
-    # Separate figure runs retain their own complete source tables. The normal
-    # paper run shares the identical term tables with the supplement exporter.
-    if source != ROOT / 'analysis_results/enriched_terms.tsv' or output_dir != ROOT / 'figures/main':
-        exports += [('union_enrichment_terms', terms), ('enrichment_term_categories', mapping)]
-    for name, frame in exports:
-        artifacts.write_dataframe(frame, data_dir / f'{name}.tsv', sep='\t', index=False)
+    membership.to_csv(data_dir / 'enrichment_gene_memberships.tsv', sep='\t', index=False)
     print('Finished figure and data export.')
-
 
 
 if __name__ == '__main__':

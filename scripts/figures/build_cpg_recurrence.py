@@ -4,7 +4,6 @@ from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-import project_layout as artifacts
 import argparse
 import os
 import tempfile
@@ -19,7 +18,6 @@ import pandas as pd
 from figure_typography import readable_text
 
 ROOT = Path(__file__).resolve().parents[2]
-
 
 
 def draw_figure(tp, cel, output_dir):
@@ -88,7 +86,7 @@ def draw_figure(tp, cel, output_dir):
 
     readable_text(fig, minimum=8.5)
 
-    artifacts.save_figure(fig, output_dir / 'cpg_recurrence.pdf', dpi=400, facecolor='white')
+    fig.savefig(output_dir / 'cpg_recurrence.pdf', dpi=400, facecolor='white')
     plt.close(fig)
 
 
@@ -103,7 +101,6 @@ def main():
     cel = pd.read_csv(args.data_dir / 'celsr3_cpg_recurrence.tsv', sep='\t')
     draw_figure(tp, cel, output_dir)
     print('Finished CpG recurrence figure.')
-
 
 
 if __name__ == '__main__':

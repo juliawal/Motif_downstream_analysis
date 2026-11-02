@@ -1,4 +1,4 @@
-"""Shared preparation of the saved F3 results for the manuscript figure and Table S3.
+"""Prepare the saved F3 results for the manuscript figure and enrichment table.
 
 Retains the original statistics and the approved display categories and ordering.
 No files are written and no hypothesis tests are run by this module.
@@ -30,7 +30,7 @@ def short_cohort(cohort):
 
 def prepare(source):
     all_terms = pd.read_csv(source, sep='\t')
-    union = all_terms[all_terms.analysis.eq('union') & all_terms.adj_p_value.lt(.05)].copy()
+    union = all_terms[all_terms.analysis.eq('union') & all_terms.adj_p_value.le(.05)].copy()
     terms = union[union.term_has_min_mf_overlap].copy()
     terms['term_id'] = terms.term_name.str.extract(r'(GO:\d+|R-HSA-\d+)', expand=False)
     terms['display_category'] = terms.descriptive_theme
@@ -54,5 +54,5 @@ def prepare(source):
     mapping['assignment_basis'] = np.where(mapping.descriptive_theme.eq(mapping.display_category),
         'Saved descriptive category', 'Explicit immune-receptor/signalling term-ID assignment for display')
     mapping['reference_url'] = mapping.term_id.map(lambda x: 'https://reactome.org/content/detail/'+x if x.startswith('R-HSA') else 'https://amigo.geneontology.org/amigo/term/'+x)
-    return terms, rank, summary, mapping, len(union)-len(terms)
+    return terms, rank, summary, mapping
 

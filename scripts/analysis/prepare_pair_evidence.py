@@ -5,10 +5,8 @@ No models or original hypothesis tests are refitted. Union counts each pair once
 per cohort; the three settings are sensitivity analyses on the same patients.
 """
 import argparse
+import json
 from pathlib import Path
-import sys
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-from pipeline_file_layout import PipelineFiles
 import numpy as np
 import pandas as pd
 
@@ -18,7 +16,6 @@ parser.add_argument('--pipeline-dir', type=Path, default=ROOT / 'pipeline_result
 parser.add_argument('--analysis-dir', type=Path, default=ROOT / 'analysis_results')
 args = parser.parse_args()
 PIPELINE, ANALYSIS = args.pipeline_dir.resolve(), args.analysis_dir.resolve()
-FILES = PipelineFiles(PIPELINE)
 DIRECTIONS = ANALYSIS / 'pair_directions'
 CANDIDATES = ANALYSIS / 'additional_candidates'
 for directory in [DIRECTIONS, CANDIDATES]:
@@ -27,9 +24,7 @@ K = ['MF_ensembl', 'CpG']
 
 
 def read(p, **kwargs):
-    p = Path(p)
-    stored = FILES.path(p)
-    return pd.read_csv(stored, sep='\t', **kwargs)
+    return pd.read_csv(p, sep='\t', **kwargs)
 
 
 def write(d, path):
@@ -37,7 +32,8 @@ def write(d, path):
              compression={'method': 'gzip', 'mtime': 0} if path.suffix == '.gz' else None)
 
 
-MANUAL = set(read(PIPELINE / 'original_pipeline_outputs/manual_mfs/selected_mfs/mfs.tsv.gz').MF)
+# Preserve the historical screen before the three literature-based transfers.
+MANUAL = set(json.loads((ROOT / 'scripts/paper_cohorts_and_genes.json').read_text())['manual17'])
 u = read(ANALYSIS / 'combined_evidence/union_evidence_contexts.tsv')
 pairdir = PIPELINE / 'f4_methylation_factor_cpg_pairs'
 tables = []
@@ -115,6 +111,7 @@ genes = u.groupby(['MF_ensembl','MF']).agg(n_selected_cohorts=('cohort','size'),
 genes['pooled_support_fraction'] = genes.n_supported_pairs/genes.n_tested_pairs.replace(0,np.nan)
 genes['manual17'] = genes.MF.isin(MANUAL)
 genes = genes.sort_values(['n_all_four_positive','n_supported_cohorts','n_strict_recurrent_pairs','n_supported_pairs'],ascending=False)
+write(genes,CANDIDATES/'all_candidate_evidence.tsv')
 write(genes[~genes.manual17],CANDIDATES/'additional_candidate_evidence.tsv')
 
 # Case-level F1 annotation is exported only for HNF1B/UCEC, ERG/PRAD, RUNX1/THCA.

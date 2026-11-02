@@ -55,5 +55,41 @@
     "TCL1A",
     "TP63",
     "WT1"
-  ]
+  ],
+  "manual_prioritised": [
+    "BMP2",
+    "ERG",
+    "FOXA2",
+    "GATA3",
+    "HNF1A",
+    "HOXB4",
+    "PRDM16",
+    "RUNX1",
+    "RUNX2",
+    "SOX2",
+    "TCL1A",
+    "TP63",
+    "WT1"
+  ],
+  "additional_candidates": [
+    "BEX2",
+    "CELSR3",
+    "DLX6",
+    "HNF1B",
+    "HOXA9",
+    "HOXB13",
+    "HOXB9",
+    "IRX2",
+    "KNDC1",
+    "LHX5",
+    "LMX1B",
+    "MNX1",
+    "PITX2",
+    "PLEKHG4B",
+    "PTPRN2",
+    "RIMBP2",
+    "SIM2"
+  ],
+  "manual_evaluation": "section29_13genes_F1-F3_2026-11-02",
+  "additional_evaluation": "section210_17genes_F1-F3_2026-11-02"
 }

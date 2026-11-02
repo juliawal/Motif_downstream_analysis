@@ -6,6 +6,9 @@ from .common import copy_file
 ARMS = ("rank_1", "rank_2", "rank_3", "union")
 EVALUATIONS = ("binding_sites.tsv", "binding_sites_per_mf.tsv",
                "ppi_proximity_per_mf.tsv", "gene_set_enrichment.tsv")
+PANEL_FILES = ("selected_mfs/mfs.tsv", "evaluation/binding_sites.tsv",
+               "evaluation/binding_sites_per_mf.tsv", "evaluation/ppi_proximity.tsv",
+               "evaluation/ppi_proximity_per_mf.tsv", "evaluation/gene_set_enrichment.tsv")
 STABILITY = ("selection.tsv", "ranking.tsv")
 RESOURCE_COPY_KEYS = ("gene_annotation_file", "gene_tss_annotations_file", "cpg_coordinates_file",
                       "cpg_gene_annotations_file", "coding_gene_list_file")
@@ -46,9 +49,12 @@ def copy_inputs(root, payload, config):
             for name in ("selected_mfs/mfs.tsv", *pair_inputs,
                          *("evaluation/" + name for name in EVALUATIONS)):
                 copy(base / name, Path("original_pipeline_outputs") / base.relative_to(root / "results") / name)
-    manual = root / "results/manual_mfs"
-    for name in ("selected_mfs/mfs.tsv", "evaluation/binding_sites.tsv",
-                 "evaluation/binding_sites_per_mf.tsv", "evaluation/ppi_proximity.tsv",
-                 "evaluation/gene_set_enrichment.tsv"):
-        copy(manual / name, Path("original_pipeline_outputs/manual_mfs") / name)
 
+
+def copy_panels(panel_root, payload, paper):
+    """Keep the two completed group evaluations byte-for-byte in the export."""
+    for key in ('manual_evaluation', 'additional_evaluation'):
+        relative = Path(paper[key]) / 'results/manual_mfs'
+        for name in PANEL_FILES:
+            copy_file(panel_root / relative / name,
+                      payload / 'panel_evaluations' / relative / name, compress=False)

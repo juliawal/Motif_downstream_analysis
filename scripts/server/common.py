@@ -1,5 +1,4 @@
 """Copy inputs and write the data needed by the downstream analysis."""
-import csv
 import gzip
 import json
 from pathlib import Path
@@ -10,16 +9,6 @@ def json_write(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False, allow_nan=False) + "\n")
-
-
-def write_tsv(path, rows, columns):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    opener = gzip.open if path.name.endswith(".gz") else open
-    with opener(path, "wt", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=columns, delimiter="\t", extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def copy_file(source, destination, *, compress=False):

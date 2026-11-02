@@ -16,7 +16,6 @@ from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-import project_layout as artifacts
 from project_layout import figure_data_dir
 import argparse
 import csv
@@ -43,8 +42,6 @@ def read(path):
 
 
 def write_table(path, rows):
-    if not artifacts.TABLES:
-        return
     with path.open('w') as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]), delimiter='\t')
         w.writeheader()
@@ -183,10 +180,9 @@ def main():
     write_table(DATA / 'ucec_motif_binding_tests.tsv',[groups[a] for a in settings_order])
 
     fig = draw_portrait(union, lookup, settings_order, groups)
-    artifacts.save_figure(fig, OUT/'ucec_motif_binding.pdf',dpi=300,facecolor='white')
+    fig.savefig(OUT / 'ucec_motif_binding.pdf', dpi=300, facecolor='white')
     plt.close(fig)
     print('Finished figure and data export.')
-
 
 
 if __name__ == '__main__':

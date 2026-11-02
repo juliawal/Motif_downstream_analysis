@@ -13,9 +13,6 @@ import json
 from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-from pipeline_file_layout import PipelineFiles
-import numpy as np
 import pandas as pd
 import yaml
 
@@ -43,10 +40,6 @@ def tokens(value, separator=";"):
     return set(str(value).split(separator)) - {"", "nan"} if pd.notna(value) else set()
 
 
-
-
-
-
 def theme(name):
     """The paper's original descriptive vocabulary; classes have no own test."""
     s = name.lower()
@@ -64,7 +57,6 @@ def theme(name):
 class Analysis:
     def __init__(self, source, output):
         self.source = Path(source).resolve()
-        self.files = PipelineFiles(self.source)
         self.output = Path(output).resolve()
         self.selection_output = self.output / "candidate_selection"
         self.evaluation_output = self.output / "binding_network_enrichment"
@@ -80,11 +72,11 @@ class Analysis:
         self.ppi_effects = self.read("ppi_network_proximity/group_effects.tsv")
 
     def text(self, path):
-        path = self.files.path(path)
+        path = self.source / path
         return gzip.decompress(path.read_bytes()).decode() if path.suffix == ".gz" else path.read_text()
 
     def read(self, path, **kwargs):
-        return pd.read_csv(self.files.path(path), sep="\t", **kwargs)
+        return pd.read_csv(self.source / path, sep="\t", **kwargs)
 
     def save(self, frame, name):
         if name in SELECTION_TABLES:
@@ -175,7 +167,7 @@ class Analysis:
                 terms["analysis"], terms["cohort"], terms["source"] = arm, cohort, str(term_path)
                 selected_symbols = set(pairs.MF)
                 terms["descriptive_theme"] = terms.term_name.map(theme)
-                sig = terms[terms.adj_p_value.lt(.05)].copy()
+                sig = terms[terms.adj_p_value.le(.05)].copy()
                 f3_sig.append(sig)
                 f3_counts.append(dict(analysis=arm, cohort=cohort, n_tested_terms=len(terms), n_background_genes=len(bg_symbols), n_mf_symbols=len(selected_symbols), n_nominal_terms=int(terms.p_value.lt(.05).sum()), n_bh_terms=len(sig), n_bh_min3_terms=int(sig.term_has_min_mf_overlap.sum()), min_p=terms.p_value.min(), min_q=terms.adj_p_value.min(), source=str(term_path)))
             overlap = dict(cohort=cohort, rank1=len(mfsets["rank_1"]), rank2=len(mfsets["rank_2"]), rank3=len(mfsets["rank_3"]), intersection_all3=len(set.intersection(*(mfsets[a] for a in ARMS[:3]))), union=len(mfsets["union"]), union_exact_original_union=True, union_added_to_rank1=len(mfsets["union"] - mfsets["rank_1"]), pairs_union=len(pairsets["union"]), pairs_union_exact_original_union=True)
@@ -237,7 +229,7 @@ class Analysis:
             ee = effects[effects.measure.eq(measure)].set_index(KEY)
             names = ["n_mfs_nominated", "n_mfs_in_network", "p_value", "observed_mean_score"]
             coverage = coverage.merge(ee[names].rename(columns={n: f"F2_{measure}_{n}" for n in names}), on=KEY)
-        coverage = coverage.merge(term_counts.rename(columns={"n_tested_terms": "F3_n_tested_terms", "n_bh_terms": "F3_n_q_lt_05", "n_bh_min3_terms": "F3_n_q_lt_05_min3_mfs"}), on=KEY)
+        coverage = coverage.merge(term_counts.rename(columns={"n_tested_terms": "F3_n_tested_terms", "n_bh_terms": "F3_n_adjusted_p_le_05", "n_bh_min3_terms": "F3_n_adjusted_p_le_05_min3_mfs"}), on=KEY)
         self.save(coverage, "evaluation_coverage_and_tests.tsv")
         st1 = []
         for c in self.cohorts:
@@ -247,7 +239,6 @@ class Analysis:
             st1.append(dict(cohort=c, n_union_selected=len(members[members.analysis.eq("union") & members.cohort.eq(c)]), n_in_all_three_settings=int(overlap.set_index("cohort").loc[c, "intersection_all3"]), n_formal_F1=int(ff.status.eq("tested").sum()), n_usable_FIMO=int((ff.status.eq("tested") & ff.track.eq("FIMO")).sum()), n_usable_ChIP=int((ff.status.eq("tested") & ff.track.eq("ChIP_seq")).sum()), n_PPI_mapped=int(mm.mapping_status.eq("in_network").sum()), n_F4_samples=int(mediation.n_samples), F4_testable=bool(mediation.testable)))
         self.save(pd.DataFrame(st1), "union_coverage.tsv")
         print(f"Selection and F1–F3 summaries: {len(self.cohorts)} cohorts", flush=True)
-
 
 
     def ppi_contributions(self, per_mf):
